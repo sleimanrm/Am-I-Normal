@@ -1,0 +1,306 @@
+import type { Habit } from "../types";
+
+export const HABITS: Habit[] = [
+  // ── Overthinking ────────────────────────────────────────────
+  {
+    id: 1,
+    question: "Do you rehearse conversations in your head before they happen?",
+    category: "Overthinking",
+    meTooPct: 72,
+    traits: { Overthinker: 3, "Creative Thinker": 1 },
+  },
+  {
+    id: 2,
+    question: "Do you replay embarrassing moments from years ago?",
+    category: "Overthinking",
+    meTooPct: 68,
+    traits: { Overthinker: 3, Sentimental: 2 },
+  },
+  {
+    id: 3,
+    question: "Do you mentally argue with people who aren't there?",
+    category: "Overthinking",
+    meTooPct: 61,
+    traits: { Overthinker: 2, "Creative Thinker": 1 },
+  },
+  {
+    id: 4,
+    question: "Do you plan what you'll say in a meeting but then forget it all?",
+    category: "Overthinking",
+    meTooPct: 55,
+    traits: { Overthinker: 2, "Pattern Seeker": 1 },
+  },
+  {
+    id: 5,
+    question: "Do you catastrophize small mistakes into career-ending disasters?",
+    category: "Overthinking",
+    meTooPct: 47,
+    traits: { Overthinker: 3 },
+  },
+  {
+    id: 6,
+    question: "Do you reread your own texts to see how they sound?",
+    category: "Overthinking",
+    meTooPct: 74,
+    traits: { Overthinker: 2, Observer: 1 },
+  },
+  {
+    id: 7,
+    question: "Do you practice arguments before they happen and win every time?",
+    category: "Overthinking",
+    meTooPct: 58,
+    traits: { Overthinker: 2, "Creative Thinker": 2 },
+  },
+
+  // ── Pets ────────────────────────────────────────────────────
+  {
+    id: 8,
+    question: "Do you make songs for your pets?",
+    category: "Pets",
+    meTooPct: 57,
+    traits: { "Animal Lover": 3, "Creative Thinker": 2 },
+  },
+  {
+    id: 9,
+    question: "Do you talk to your pets like they fully understand you?",
+    category: "Pets",
+    meTooPct: 82,
+    traits: { "Animal Lover": 3, Sentimental: 1 },
+  },
+  {
+    id: 10,
+    question: "Do you feel guilty leaving the house because of your pet?",
+    category: "Pets",
+    meTooPct: 65,
+    traits: { "Animal Lover": 3, Sentimental: 2 },
+  },
+  {
+    id: 11,
+    question: "Do you use a baby voice exclusively for your pet?",
+    category: "Pets",
+    meTooPct: 71,
+    traits: { "Animal Lover": 2, Sentimental: 1 },
+  },
+  {
+    id: 12,
+    question: "Do you share your food with your pet and feel no shame?",
+    category: "Pets",
+    meTooPct: 60,
+    traits: { "Animal Lover": 2, "Comfort Seeker": 1 },
+  },
+
+  // ── Food ────────────────────────────────────────────────────
+  {
+    id: 13,
+    question: "Do you open the fridge even when you're not hungry?",
+    category: "Food",
+    meTooPct: 78,
+    traits: { "Comfort Seeker": 3 },
+  },
+  {
+    id: 14,
+    question: "Do you eat one food item at a time before touching the others?",
+    category: "Food",
+    meTooPct: 34,
+    traits: { "Pattern Seeker": 3 },
+  },
+  {
+    id: 15,
+    question: "Do you narrate what you're eating while eating it?",
+    category: "Food",
+    meTooPct: 29,
+    traits: { "Creative Thinker": 2, Observer: 1 },
+  },
+  {
+    id: 16,
+    question: "Do you save the best bite for last?",
+    category: "Food",
+    meTooPct: 66,
+    traits: { "Pattern Seeker": 2, Sentimental: 1 },
+  },
+  {
+    id: 17,
+    question: "Do you eat the same breakfast almost every day?",
+    category: "Food",
+    meTooPct: 52,
+    traits: { "Comfort Seeker": 2, "Pattern Seeker": 2 },
+  },
+  {
+    id: 18,
+    question: "Do you plan what you'll eat next while still eating?",
+    category: "Food",
+    meTooPct: 61,
+    traits: { "Comfort Seeker": 2, Overthinker: 1 },
+  },
+
+  // ── Sleep ───────────────────────────────────────────────────
+  {
+    id: 19,
+    question: "Do you imagine elaborate scenarios before falling asleep?",
+    category: "Sleep",
+    meTooPct: 63,
+    traits: { "Creative Thinker": 3, Introvert: 1 },
+  },
+  {
+    id: 20,
+    question: "Do you set multiple alarms just in case?",
+    category: "Sleep",
+    meTooPct: 77,
+    traits: { Overthinker: 2, "Pattern Seeker": 1 },
+  },
+  {
+    id: 21,
+    question: "Do you feel more creative at night than during the day?",
+    category: "Sleep",
+    meTooPct: 58,
+    traits: { "Creative Thinker": 3, Introvert: 2 },
+  },
+  {
+    id: 22,
+    question: "Do you check the time at night and calculate remaining sleep?",
+    category: "Sleep",
+    meTooPct: 70,
+    traits: { "Pattern Seeker": 2, Overthinker: 2 },
+  },
+  {
+    id: 23,
+    question: "Do you stay in bed scrolling after your alarm goes off?",
+    category: "Sleep",
+    meTooPct: 85,
+    traits: { "Comfort Seeker": 3, Introvert: 1 },
+  },
+  {
+    id: 24,
+    question: "Do you fall asleep to the same show playing in the background?",
+    category: "Sleep",
+    meTooPct: 44,
+    traits: { "Comfort Seeker": 2, "Pattern Seeker": 1 },
+  },
+
+  // ── Technology ──────────────────────────────────────────────
+  {
+    id: 25,
+    question: "Do you check your phone even when it didn't vibrate?",
+    category: "Technology",
+    meTooPct: 81,
+    traits: { "Pattern Seeker": 1, Overthinker: 1 },
+  },
+  {
+    id: 26,
+    question: "Do you have tabs open you know you'll never read?",
+    category: "Technology",
+    meTooPct: 79,
+    traits: { Observer: 2, "Comfort Seeker": 1 },
+  },
+  {
+    id: 27,
+    question: "Do you mute notifications but still check constantly?",
+    category: "Technology",
+    meTooPct: 67,
+    traits: { Overthinker: 2, "Pattern Seeker": 1 },
+  },
+  {
+    id: 28,
+    question: "Do you screenshot things you'll never look at again?",
+    category: "Technology",
+    meTooPct: 53,
+    traits: { Observer: 2, Sentimental: 1 },
+  },
+  {
+    id: 29,
+    question: "Do you narrate your life in your head like a social media post?",
+    category: "Technology",
+    meTooPct: 38,
+    traits: { "Creative Thinker": 2, Observer: 2 },
+  },
+
+  // ── Social ──────────────────────────────────────────────────
+  {
+    id: 30,
+    question: "Do you observe strangers and invent stories about their lives?",
+    category: "Social",
+    meTooPct: 54,
+    traits: { Observer: 3, "Creative Thinker": 2 },
+  },
+  {
+    id: 31,
+    question: "Do you talk to yourself when you're alone?",
+    category: "Social",
+    meTooPct: 63,
+    traits: { Introvert: 2, "Creative Thinker": 1 },
+  },
+  {
+    id: 32,
+    question: "Do you mentally rehearse how to say goodbye before a call ends?",
+    category: "Social",
+    meTooPct: 42,
+    traits: { Overthinker: 2, "Pattern Seeker": 1 },
+  },
+  {
+    id: 33,
+    question: "Do you feel relieved when plans get cancelled?",
+    category: "Social",
+    meTooPct: 71,
+    traits: { Introvert: 3, "Comfort Seeker": 1 },
+  },
+  {
+    id: 34,
+    question: "Do you wave back at someone who wasn't waving at you?",
+    category: "Social",
+    meTooPct: 88,
+    traits: { Sentimental: 1, Observer: 1 },
+  },
+  {
+    id: 35,
+    question: "Do you lie awake wishing you'd said something differently?",
+    category: "Social",
+    meTooPct: 65,
+    traits: { Overthinker: 3, Sentimental: 2 },
+  },
+
+  // ── Body ────────────────────────────────────────────────────
+  {
+    id: 36,
+    question: "Do you hold your breath without realizing it?",
+    category: "Body",
+    meTooPct: 56,
+    traits: { Observer: 2 },
+  },
+  {
+    id: 37,
+    question: "Do you crack your knuckles, neck, or back for satisfaction?",
+    category: "Body",
+    meTooPct: 62,
+    traits: { "Comfort Seeker": 2, "Pattern Seeker": 1 },
+  },
+  {
+    id: 38,
+    question: "Do you notice a song is stuck in your head mid-song?",
+    category: "Body",
+    meTooPct: 74,
+    traits: { Observer: 2, "Creative Thinker": 1 },
+  },
+
+  // ── Habits ──────────────────────────────────────────────────
+  {
+    id: 39,
+    question: "Do you smell things before putting them in the laundry to check?",
+    category: "Habits",
+    meTooPct: 76,
+    traits: { "Pattern Seeker": 2, Observer: 1 },
+  },
+  {
+    id: 40,
+    question: "Do you make deals with yourself to procrastinate?",
+    category: "Habits",
+    meTooPct: 69,
+    traits: { Overthinker: 2, "Comfort Seeker": 1 },
+  },
+  {
+    id: 41,
+    question: "Do you arrange things symmetrically without knowing why?",
+    category: "Habits",
+    meTooPct: 43,
+    traits: { "Pattern Seeker": 3, Observer: 1 },
+  },
+];
