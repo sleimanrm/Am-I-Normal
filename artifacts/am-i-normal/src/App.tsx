@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from "framer-motion";
-import { Check, X, ArrowRight, Sparkles } from "lucide-react";
+import { Check, X, ArrowRight, Sparkles, Flame } from "lucide-react";
 
 // --- TYPES ---
 type Category = "Overthinking" | "Pets" | "Food" | "Sleep" | "Technology" | "Social" | "Body" | "Habits";
@@ -38,14 +38,12 @@ const RAW_HABITS: Omit<Habit, "respondents">[] = [
   { question: "Do you catastrophize small mistakes into career-ending disasters?", meTooPct: 47, category: "Overthinking" },
   { question: "Do you reread your own texts to see how they sound?", meTooPct: 74, category: "Overthinking" },
   { question: "Do you practice arguments before they happen and win every time?", meTooPct: 58, category: "Overthinking" },
-
   // Pets
   { question: "Do you make songs for your pets?", meTooPct: 57, category: "Pets" },
   { question: "Do you talk to your pets like they fully understand you?", meTooPct: 82, category: "Pets" },
   { question: "Do you feel guilty leaving the house because of your pet?", meTooPct: 65, category: "Pets" },
   { question: "Do you use a baby voice exclusively for your pet?", meTooPct: 71, category: "Pets" },
   { question: "Do you share your food with your pet and feel no shame?", meTooPct: 60, category: "Pets" },
-
   // Food
   { question: "Do you open the fridge even when you're not hungry?", meTooPct: 78, category: "Food" },
   { question: "Do you eat one food item at a time before touching the others?", meTooPct: 34, category: "Food" },
@@ -53,7 +51,6 @@ const RAW_HABITS: Omit<Habit, "respondents">[] = [
   { question: "Do you save the best bite for last?", meTooPct: 66, category: "Food" },
   { question: "Do you eat the same breakfast almost every day?", meTooPct: 52, category: "Food" },
   { question: "Do you plan what you'll eat next while still eating?", meTooPct: 61, category: "Food" },
-
   // Sleep
   { question: "Do you imagine elaborate scenarios before falling asleep?", meTooPct: 63, category: "Sleep" },
   { question: "Do you set multiple alarms just in case?", meTooPct: 77, category: "Sleep" },
@@ -61,14 +58,12 @@ const RAW_HABITS: Omit<Habit, "respondents">[] = [
   { question: "Do you check the time in the middle of the night and calculate remaining sleep?", meTooPct: 70, category: "Sleep" },
   { question: "Do you stay in bed scrolling after your alarm goes off?", meTooPct: 85, category: "Sleep" },
   { question: "Do you fall asleep to the same show playing in the background?", meTooPct: 44, category: "Sleep" },
-
   // Technology
   { question: "Do you check your phone even when it didn't vibrate?", meTooPct: 81, category: "Technology" },
   { question: "Do you have tabs open you know you'll never read?", meTooPct: 79, category: "Technology" },
   { question: "Do you mute notifications but still check constantly?", meTooPct: 67, category: "Technology" },
   { question: "Do you screenshot things you'll never look at again?", meTooPct: 53, category: "Technology" },
   { question: "Do you narrate your life in your head like a Twitter thread?", meTooPct: 38, category: "Technology" },
-
   // Social
   { question: "Do you observe strangers and invent stories about their lives?", meTooPct: 54, category: "Social" },
   { question: "Do you talk to yourself when you're alone?", meTooPct: 63, category: "Social" },
@@ -76,22 +71,18 @@ const RAW_HABITS: Omit<Habit, "respondents">[] = [
   { question: "Do you feel relieved when plans get cancelled?", meTooPct: 71, category: "Social" },
   { question: "Do you wave back at someone who wasn't waving at you?", meTooPct: 88, category: "Social" },
   { question: "Do you lie awake wishing you had said something differently?", meTooPct: 65, category: "Social" },
-
   // Body
   { question: "Do you hold your breath without realizing it?", meTooPct: 56, category: "Body" },
   { question: "Do you crack your knuckles, neck, or back for satisfaction?", meTooPct: 62, category: "Body" },
   { question: "Do you notice a song is stuck in your head mid-song?", meTooPct: 74, category: "Body" },
-
   // Habits
   { question: "Do you smell things before putting them in the laundry to check?", meTooPct: 76, category: "Habits" },
   { question: "Do you make deals with yourself to procrastinate?", meTooPct: 69, category: "Habits" },
   { question: "Do you arrange things symmetrically without knowing why?", meTooPct: 43, category: "Habits" },
 ];
 
-// Assign stable fake respondent counts
 const habits: Habit[] = RAW_HABITS.map((h) => ({ ...h, respondents: fakeRespondents() }));
 
-// Shuffle array (Fisher-Yates)
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -101,12 +92,57 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-function getResultMessage(pct: number): string {
-  if (pct >= 80) return "Almost everyone does this.";
-  if (pct >= 60) return "You're in the majority.";
-  if (pct >= 40) return "This one's surprisingly split.";
-  if (pct >= 20) return "You're more unique than most.";
-  return "That's surprisingly uncommon.";
+// --- RESULT MESSAGE LOGIC ---
+// Takes both the percentage (meTooPct) and the user's answer into account.
+function getResultMessage(pct: number, answer: Answer): string {
+  const userWithMajority = (answer === "me-too" && pct > 50) || (answer === "not-me" && pct <= 50);
+  const userAgainstMajority = !userWithMajority;
+  const isSplit = pct >= 40 && pct <= 60;
+
+  if (isSplit) {
+    const splitMessages = [
+      "This one is surprisingly split.",
+      "The world is divided on this one.",
+      "Almost exactly half and half.",
+      "No clear winner here.",
+    ];
+    return splitMessages[Math.floor(Math.random() * splitMessages.length)];
+  }
+
+  if (pct >= 80) {
+    if (userWithMajority) {
+      return "Almost everyone does this. You're in great company.";
+    } else {
+      return "Almost everyone does this — but not you. You're rare.";
+    }
+  }
+
+  if (pct >= 60) {
+    if (userWithMajority) {
+      const msgs = ["You're in the majority.", "Most people are with you on this.", "You're not alone."];
+      return msgs[Math.floor(Math.random() * msgs.length)];
+    } else {
+      const msgs = ["You're more unique than most.", "You stand out on this one.", "Not many would say the same."];
+      return msgs[Math.floor(Math.random() * msgs.length)];
+    }
+  }
+
+  if (pct <= 20) {
+    if (userAgainstMajority) {
+      return "Hardly anyone does this — but you do. Own it.";
+    } else {
+      return "Almost no one does this. You're totally normal.";
+    }
+  }
+
+  // pct 20–40
+  if (userWithMajority) {
+    const msgs = ["You're with the minority — the interesting crowd.", "Fewer people than you'd think agree."];
+    return msgs[Math.floor(Math.random() * msgs.length)];
+  } else {
+    const msgs = ["You're in the majority here.", "Most people are on your side."];
+    return msgs[Math.floor(Math.random() * msgs.length)];
+  }
 }
 
 function formatRespondents(n: number): string {
@@ -135,8 +171,8 @@ function AnimatedCounter({ targetValue, duration = 3000 }: { targetValue: number
   return <span>{value}</span>;
 }
 
-// --- PROGRESS BAR (synced to counter) ---
-function CountdownBar({ duration }: { duration: number }) {
+// --- COUNTDOWN BAR ---
+function CountdownBar({ duration, instanceKey }: { duration: number; instanceKey: string }) {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
@@ -151,7 +187,7 @@ function CountdownBar({ duration }: { duration: number }) {
     };
 
     requestAnimationFrame(tick);
-  }, [duration]);
+  }, [duration, instanceKey]);
 
   return (
     <div className="w-full h-1.5 bg-purple-100 rounded-full overflow-hidden">
@@ -274,17 +310,18 @@ export default function App() {
   const [queue, setQueue] = useState<Habit[]>(() => shuffle(habits));
   const [queueIndex, setQueueIndex] = useState(0);
   const [userAnswer, setUserAnswer] = useState<Answer | null>(null);
+  const [streak, setStreak] = useState(0);
   const [profile, setProfile] = useState<Profile>(emptyProfile());
 
-  // Ensure there's always more habits by re-shuffling when needed
   const currentHabit = queue[queueIndex] ?? queue[0];
+  const nextHabit = queue[(queueIndex + 1) % queue.length];
 
-  const REVEAL_DURATION = 3000; // ms — counter + progress bar speed
+  const REVEAL_DURATION = 3000;
 
   const handleAnswer = (answer: Answer) => {
     setUserAnswer(answer);
+    setStreak((s) => s + 1);
 
-    // Update hidden session profile
     if (answer === "me-too") {
       setProfile((prev) => ({
         ...prev,
@@ -298,7 +335,6 @@ export default function App() {
   const handleNext = () => {
     const nextIndex = queueIndex + 1;
     if (nextIndex >= queue.length) {
-      // Reshuffle for endless mode
       setQueue(shuffle(habits));
       setQueueIndex(0);
     } else {
@@ -308,7 +344,6 @@ export default function App() {
     setView("question");
   };
 
-  // Auto-advance after REVEAL_DURATION + small buffer
   const autoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (view !== "result") return;
@@ -317,7 +352,7 @@ export default function App() {
   }, [view, queueIndex]);
 
   const pct = currentHabit?.meTooPct ?? 50;
-  const resultMessage = getResultMessage(pct);
+  const resultMessage = userAnswer ? getResultMessage(pct, userAnswer) : "";
 
   return (
     <div className="min-h-[100dvh] w-full flex items-center justify-center bg-gradient-to-br from-[#7C3AED] to-[#4C1D95] overflow-hidden p-4">
@@ -374,6 +409,22 @@ export default function App() {
               transition={{ duration: 0.2 }}
               className="w-full flex flex-col gap-5"
             >
+              {/* Streak counter */}
+              {streak > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex justify-center"
+                >
+                  <div className="flex items-center gap-1.5 bg-white/15 backdrop-blur px-4 py-1.5 rounded-full border border-white/20">
+                    <Flame className="w-4 h-4 text-orange-300" />
+                    <span className="text-white font-bold text-sm" data-testid="text-streak">
+                      {streak} answered
+                    </span>
+                  </div>
+                </motion.div>
+              )}
+
               <SwipeCard
                 habit={currentHabit}
                 index={queueIndex}
@@ -413,21 +464,27 @@ export default function App() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -16 }}
               transition={{ type: "spring", bounce: 0.3, duration: 0.45 }}
-              className="w-full flex flex-col gap-4"
+              className="w-full flex flex-col gap-3"
             >
               <div className="w-full bg-card rounded-[2rem] p-8 shadow-2xl shadow-black/30 flex flex-col relative overflow-hidden">
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
 
-                {/* Answer badge */}
-                <div className="flex justify-center mb-5 z-10">
-                  <div className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-sm ${
+                {/* Streak + Answer badge row */}
+                <div className="flex items-center justify-between mb-5 z-10">
+                  <div className="flex items-center gap-1.5 bg-orange-50 border border-orange-100 px-3 py-1.5 rounded-full">
+                    <Flame className="w-3.5 h-3.5 text-orange-400" />
+                    <span className="text-orange-600 font-bold text-xs" data-testid="text-streak-result">
+                      {streak} answered
+                    </span>
+                  </div>
+                  <div className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full font-bold text-xs ${
                     userAnswer === "me-too"
                       ? "bg-green-100 text-green-700"
                       : "bg-red-100 text-red-600"
                   }`}>
                     {userAnswer === "me-too"
-                      ? <><Check className="w-4 h-4" /> You said Me Too</>
-                      : <><X className="w-4 h-4" /> You said Not Me</>
+                      ? <><Check className="w-3.5 h-3.5" /> Me Too</>
+                      : <><X className="w-3.5 h-3.5" /> Not Me</>
                     }
                   </div>
                 </div>
@@ -446,18 +503,18 @@ export default function App() {
                 {/* Verdict */}
                 <div className="flex justify-center z-10 mb-3">
                   <div className="bg-primary/8 px-6 py-3 rounded-full border border-primary/20">
-                    <p className="text-lg font-bold text-card-foreground">{resultMessage}</p>
+                    <p className="text-lg font-bold text-card-foreground text-center">{resultMessage}</p>
                   </div>
                 </div>
 
                 {/* Respondents */}
-                <p className="text-center text-card-foreground/40 text-sm font-medium z-10 mb-6" data-testid="text-respondents">
+                <p className="text-center text-card-foreground/40 text-sm font-medium z-10 mb-5" data-testid="text-respondents">
                   {formatRespondents(currentHabit.respondents)} people answered
                 </p>
 
                 {/* Auto-advance bar + Next */}
                 <div className="z-10 space-y-3">
-                  <CountdownBar key={`bar-${queueIndex}`} duration={REVEAL_DURATION} />
+                  <CountdownBar key={`bar-${queueIndex}`} duration={REVEAL_DURATION} instanceKey={`bar-${queueIndex}`} />
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.96 }}
@@ -470,6 +527,22 @@ export default function App() {
                   </motion.button>
                 </div>
               </div>
+
+              {/* Next category preview */}
+              {nextHabit && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="flex items-center justify-center gap-2 bg-white/10 backdrop-blur border border-white/15 rounded-2xl px-5 py-3"
+                  data-testid="next-category-preview"
+                >
+                  <span className="text-white/50 text-xs font-medium uppercase tracking-wider">Up next</span>
+                  <span className="text-white font-semibold text-sm">
+                    {CATEGORY_EMOJI[nextHabit.category]} {nextHabit.category}
+                  </span>
+                </motion.div>
+              )}
             </motion.div>
           )}
 
