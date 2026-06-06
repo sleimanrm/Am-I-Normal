@@ -1,0 +1,212 @@
+Improve the “Am I Normal?” app with the following changes:
+
+1. Endless Discovery Mode
+
+Remove the final “You’re perfectly normal” ending screen.
+
+The app should never end.
+
+Flow should be:
+
+Question → Answer → Result → Next Question → Question → Answer → Result
+
+Users stop whenever they want.
+
+Make the experience feel more like TikTok or Tinder and less like a quiz.
+
+⸻
+
+2. Better Result Screen
+
+Replace:
+
+“63% of people do this”
+
+with:
+
+“63% said Me Too”
+
+Make the percentage the largest element on the screen.
+
+Example:
+
+63%
+
+said Me Too
+
+You’re in the majority.
+
+⸻
+
+3. Add Total Responses
+
+Below the percentage, show:
+
+14,283 people answered
+
+Use fake numbers for now.
+
+Randomly generate values between 1,000 and 100,000.
+
+⸻
+
+4. Slower Reveal Animation
+
+The percentage count-up animation is too fast.
+
+Make it take approximately 3 seconds.
+
+The number should count smoothly from 0 to the final percentage.
+
+The progress bar should fill at the same speed.
+
+⸻
+
+5. Remove Quotation Marks
+
+Change:
+
+“Do you rehearse conversations in your head before they happen?”
+
+to:
+
+Do you rehearse conversations in your head before they happen?
+
+Remove quotation marks from all habits.
+
+⸻
+
+6. Remove the “HABIT” Label
+
+Delete the HABIT label from the top left of the card.
+
+The question itself already explains what the user is seeing.
+
+⸻
+
+7. Add Categories
+
+Each habit should belong to a category.
+
+Display a small category badge at the top of the card.
+
+Examples:
+
+🧠 Overthinking
+
+🐶 Pets
+
+🍔 Food
+
+😴 Sleep
+
+📱 Technology
+
+👥 Social
+
+Use sample categories for now.
+
+⸻
+
+8. Smarter Result Messages
+
+Instead of always showing:
+
+“You’re in the majority.”
+
+Use different messages depending on the percentage.
+
+Examples:
+
+If above 80%:
+“Almost everyone does this.”
+
+If between 60% and 80%:
+“You’re in the majority.”
+
+If between 40% and 60%:
+“This one’s surprisingly split.”
+
+If between 20% and 40%:
+“You’re more unique than most.”
+
+If below 20%:
+“That’s surprisingly uncommon.”
+
+⸻
+
+9. User Profile Foundation
+
+Store the user’s answers during the session.
+
+Create a hidden profile object that tracks categories.
+
+For example:
+
+If a user answers “Me Too” to many overthinking habits:
+
+overthinking += 1
+
+If a user answers “Me Too” to pet habits:
+
+pets += 1
+
+We will use this later for personality insights.
+
+No need to show this screen yet.
+
+Just build the logic.
+
+⸻
+
+10. More Habits
+
+Expand the demo data.
+
+Add at least 30 habits.
+
+Use categories.
+
+Examples:
+
+Overthinking:
+
+* Do you rehearse conversations before they happen?
+* Do you replay embarrassing moments in your head?
+
+Pets:
+
+* Do you make songs for your pets?
+* Do you talk to your pets like people?
+
+Food:
+
+* Do you eat one food item before touching the others?
+
+Technology:
+
+* Do you check your phone even when it didn’t vibrate?
+
+Sleep:
+
+* Do you imagine scenarios before falling asleep?
+
+Social:
+
+* Do you observe strangers and create stories about them?
+
+⸻
+
+11. Keep Current Design
+
+Keep:
+
+* Purple gradient background
+* White rounded cards
+* Current typography
+* Current swipe gestures
+* Current overall visual style
+
+Do not redesign the app.
+
+Only improve the experience and functionality.
