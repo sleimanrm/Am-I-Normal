@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Am I Normal?"
+version = "1.0.0"
+id = "artifacts/am-i-normal"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25069
+
+[services.development]
+run = "pnpm --filter @workspace/am-i-normal run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/am-i-normal", "run", "build" ]
+publicDir = "artifacts/am-i-normal/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25069"
+BASE_PATH = "/"
