@@ -6,7 +6,8 @@ export type Category =
   | "Technology"
   | "Social"
   | "Body"
-  | "Habits";
+  | "Habits"
+  | "Community";
 
 export type Trait =
   | "Overthinker"
@@ -33,4 +34,14 @@ export type TraitScores = Record<Trait, number>;
 export interface ProfileTrait {
   trait: Trait;
   pct: number;
+}
+
+export type SubmissionStatus = "pending" | "approved" | "rejected";
+
+export interface Submission {
+  id: string;
+  question: string;
+  submittedAt: number;
+  status: SubmissionStatus;
+  meTooPct: number;
 }

@@ -22,6 +22,7 @@ export const CATEGORY_EMOJI: Record<Category, string> = {
   Social: "👥",
   Body: "🫀",
   Habits: "🔁",
+  Community: "💬",
 };
 
 export const TRAIT_EMOJI: Record<Trait, string> = {
