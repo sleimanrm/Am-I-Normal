@@ -8,11 +8,13 @@
 
 export * from './answer';
 export * from './answerInput';
+export * from './getMySubmissionsParams';
 export * from './habit';
 export * from './habitTraits';
 export * from './habitUpdate';
 export * from './healthStatus';
 export * from './listSubmissionsParams';
+export * from './mySubmission';
 export * from './submission';
 export * from './submissionInput';
 export * from './submissionUpdate';

@@ -51,8 +51,28 @@ export const createSubmissionBodyQuestionMax = 280;
 
 
 export const CreateSubmissionBody = zod.object({
-  "question": zod.string().min(createSubmissionBodyQuestionMin).max(createSubmissionBodyQuestionMax)
+  "question": zod.string().min(createSubmissionBodyQuestionMin).max(createSubmissionBodyQuestionMax),
+  "sessionId": zod.string().optional()
 })
+
+
+/**
+ * @summary Get current user's submissions with live habit stats
+ */
+export const GetMySubmissionsQueryParams = zod.object({
+  "sessionId": zod.coerce.string()
+})
+
+export const GetMySubmissionsResponseItem = zod.object({
+  "id": zod.number(),
+  "question": zod.string(),
+  "status": zod.string(),
+  "submittedAt": zod.coerce.date(),
+  "habitId": zod.number().nullish(),
+  "meTooPct": zod.number().nullish(),
+  "answerCount": zod.number()
+})
+export const GetMySubmissionsResponse = zod.array(GetMySubmissionsResponseItem)
 
 
 /**

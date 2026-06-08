@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from "framer-motion";
-import { Check, X, ArrowRight, Sparkles, Flame, Brain, Plus } from "lucide-react";
+import { Check, X, ArrowRight, Sparkles, Flame, Brain, Plus, ClipboardList } from "lucide-react";
 import { useLocation } from "wouter";
 import {
   useGetHabits,
@@ -509,21 +509,35 @@ export default function GameScreen() {
         </AnimatePresence>
       </div>
 
-      {/* Floating + button */}
+      {/* Floating buttons */}
       <AnimatePresence>
         {showFloatingAdd && (
-          <motion.button
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={() => navigate("/submit")}
-            className="fixed bottom-6 right-6 w-14 h-14 bg-white rounded-full shadow-xl shadow-black/25 flex items-center justify-center z-50"
-            title="Share your weird habit"
-          >
-            <Plus className="w-7 h-7 text-purple-700" />
-          </motion.button>
+          <>
+            <motion.button
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => navigate("/my-habits")}
+              className="fixed bottom-6 left-6 w-14 h-14 bg-white/15 backdrop-blur border border-white/25 rounded-full shadow-xl shadow-black/20 flex items-center justify-center z-50"
+              title="My submitted habits"
+            >
+              <ClipboardList className="w-6 h-6 text-white" />
+            </motion.button>
+            <motion.button
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => navigate("/submit")}
+              className="fixed bottom-6 right-6 w-14 h-14 bg-white rounded-full shadow-xl shadow-black/25 flex items-center justify-center z-50"
+              title="Share your weird habit"
+            >
+              <Plus className="w-7 h-7 text-purple-700" />
+            </motion.button>
+          </>
         )}
       </AnimatePresence>
     </div>

@@ -12,4 +12,5 @@ export interface SubmissionInput {
      * @maxLength 280
      */
   question: string;
+  sessionId?: string;
 }

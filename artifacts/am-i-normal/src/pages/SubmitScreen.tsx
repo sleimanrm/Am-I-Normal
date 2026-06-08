@@ -1,14 +1,26 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Send, Check } from "lucide-react";
+import { ArrowLeft, Send, Check, ClipboardList } from "lucide-react";
 import { useLocation } from "wouter";
 import { useCreateSubmission } from "@workspace/api-client-react";
+
+const SESSION_KEY = "ain_session_id";
+function getOrCreateSessionId(): string {
+  let id = localStorage.getItem(SESSION_KEY);
+  if (!id) {
+    id = `s_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+    localStorage.setItem(SESSION_KEY, id);
+  }
+  return id;
+}
 
 export default function SubmitScreen() {
   const [, navigate] = useLocation();
   const [question, setQuestion] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [localError, setLocalError] = useState("");
+
+  const sessionId = getOrCreateSessionId();
 
   const createSubmission = useCreateSubmission({
     mutation: {
@@ -27,7 +39,7 @@ export default function SubmitScreen() {
       return;
     }
     setLocalError("");
-    createSubmission.mutate({ data: { question: trimmed } });
+    createSubmission.mutate({ data: { question: trimmed, sessionId } });
   };
 
   const error = localError || (createSubmission.isError ? "Something went wrong. Please try again." : "");
@@ -130,14 +142,25 @@ export default function SubmitScreen() {
                 </p>
               </div>
 
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.96 }}
-                onClick={() => navigate("/")}
-                className="w-full bg-primary text-white font-bold text-lg py-4 rounded-full shadow-lg"
-              >
-                Back to Discovering
-              </motion.button>
+              <div className="w-full space-y-3">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.96 }}
+                  onClick={() => navigate("/my-habits")}
+                  className="w-full bg-primary text-white font-bold text-lg py-4 rounded-full shadow-lg flex items-center justify-center gap-2"
+                >
+                  <ClipboardList className="w-5 h-5" />
+                  View My Habits
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.96 }}
+                  onClick={() => navigate("/")}
+                  className="w-full bg-white/10 border border-white/20 text-white font-semibold text-base py-3.5 rounded-full"
+                >
+                  Back to Discovering
+                </motion.button>
+              </div>
             </motion.div>
           )}
 

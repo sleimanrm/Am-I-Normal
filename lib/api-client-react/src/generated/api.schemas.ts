@@ -37,12 +37,25 @@ export interface Submission {
   habitId?: number | null;
 }
 
+export interface MySubmission {
+  id: number;
+  question: string;
+  status: string;
+  submittedAt: string;
+  /** @nullable */
+  habitId?: number | null;
+  /** @nullable */
+  meTooPct?: number | null;
+  answerCount: number;
+}
+
 export interface SubmissionInput {
   /**
      * @minLength 10
      * @maxLength 280
      */
   question: string;
+  sessionId?: string;
 }
 
 export interface SubmissionUpdate {
@@ -82,6 +95,10 @@ export interface TraitScoreInput {
   scores: TraitScoreInputScores;
   maxScores: TraitScoreInputMaxScores;
 }
+
+export type GetMySubmissionsParams = {
+sessionId: string;
+};
 
 export type ListSubmissionsParams = {
 status?: string;

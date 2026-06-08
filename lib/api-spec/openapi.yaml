@@ -91,6 +91,29 @@ paths:
         "400":
           description: Invalid input
 
+  /submissions/mine:
+    get:
+      operationId: getMySubmissions
+      tags: [submissions]
+      summary: Get current user's submissions with live habit stats
+      parameters:
+        - in: query
+          name: sessionId
+          schema:
+            type: string
+          required: true
+      responses:
+        "200":
+          description: List of user's submissions with habit stats
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MySubmission"
+        "400":
+          description: Missing sessionId
+
   /admin/submissions:
     get:
       operationId: listSubmissions
@@ -272,6 +295,26 @@ components:
         habitId:
           type: ["integer", "null"]
 
+    MySubmission:
+      type: object
+      required: [id, question, status, submittedAt, answerCount]
+      properties:
+        id:
+          type: integer
+        question:
+          type: string
+        status:
+          type: string
+        submittedAt:
+          type: string
+          format: date-time
+        habitId:
+          type: ["integer", "null"]
+        meTooPct:
+          type: ["number", "null"]
+        answerCount:
+          type: integer
+
     SubmissionInput:
       type: object
       required: [question]
@@ -280,6 +323,8 @@ components:
           type: string
           minLength: 10
           maxLength: 280
+        sessionId:
+          type: string
 
     SubmissionUpdate:
       type: object

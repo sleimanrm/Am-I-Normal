@@ -22,10 +22,12 @@ import type {
 import type {
   Answer,
   AnswerInput,
+  GetMySubmissionsParams,
   Habit,
   HabitUpdate,
   HealthStatus,
   ListSubmissionsParams,
+  MySubmission,
   Submission,
   SubmissionInput,
   SubmissionUpdate,
@@ -340,6 +342,90 @@ export const useCreateSubmission = <TError = ErrorType<void>,
       > => {
       return useMutation(getCreateSubmissionMutationOptions(options));
     }
+
+export const getGetMySubmissionsUrl = (params: GetMySubmissionsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/submissions/mine?${stringifiedParams}` : `/api/submissions/mine`
+}
+
+/**
+ * @summary Get current user's submissions with live habit stats
+ */
+export const getMySubmissions = async (params: GetMySubmissionsParams, options?: RequestInit): Promise<MySubmission[]> => {
+
+  return customFetch<MySubmission[]>(getGetMySubmissionsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMySubmissionsQueryKey = (params?: GetMySubmissionsParams,) => {
+    return [
+    `/api/submissions/mine`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetMySubmissionsQueryOptions = <TData = Awaited<ReturnType<typeof getMySubmissions>>, TError = ErrorType<void>>(params: GetMySubmissionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMySubmissions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMySubmissionsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMySubmissions>>> = ({ signal }) => getMySubmissions(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMySubmissions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMySubmissionsQueryResult = NonNullable<Awaited<ReturnType<typeof getMySubmissions>>>
+export type GetMySubmissionsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get current user's submissions with live habit stats
+ */
+
+export function useGetMySubmissions<TData = Awaited<ReturnType<typeof getMySubmissions>>, TError = ErrorType<void>>(
+ params: GetMySubmissionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMySubmissions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMySubmissionsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getListSubmissionsUrl = (params?: ListSubmissionsParams,) => {
   const normalizedParams = new URLSearchParams();

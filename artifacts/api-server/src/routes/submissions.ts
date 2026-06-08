@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { db, submissionsTable, habitsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { db, submissionsTable, habitsTable, answersTable } from "@workspace/db";
+import { eq, sql, count } from "drizzle-orm";
 import {
   CreateSubmissionBody,
   ListSubmissionsResponse,
@@ -8,6 +8,8 @@ import {
   UpdateSubmissionBody,
   UpdateSubmissionParams,
   UpdateSubmissionResponse,
+  GetMySubmissionsQueryParams,
+  GetMySubmissionsResponse,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -21,7 +23,11 @@ router.post("/submissions", async (req, res): Promise<void> => {
 
   const [submission] = await db
     .insert(submissionsTable)
-    .values({ question: body.data.question.trim(), status: "pending" })
+    .values({
+      question: body.data.question.trim(),
+      status: "pending",
+      submitterSessionId: body.data.sessionId ?? null,
+    })
     .returning();
 
   res.status(201).json({
@@ -31,6 +37,47 @@ router.post("/submissions", async (req, res): Promise<void> => {
     submittedAt: submission.submittedAt,
     habitId: submission.habitId ?? null,
   });
+});
+
+router.get("/submissions/mine", async (req, res): Promise<void> => {
+  const params = GetMySubmissionsQueryParams.safeParse(req.query);
+  if (!params.success) {
+    res.status(400).json({ error: "sessionId is required" });
+    return;
+  }
+
+  const rows = await db
+    .select({
+      id: submissionsTable.id,
+      question: submissionsTable.question,
+      status: submissionsTable.status,
+      submittedAt: submissionsTable.submittedAt,
+      habitId: submissionsTable.habitId,
+      meTooPct: sql<string | null>`
+        CASE
+          WHEN ${submissionsTable.habitId} IS NULL THEN NULL
+          WHEN COUNT(${answersTable.id}) = 0 THEN ${habitsTable.meTooPctDefault}::numeric
+          ELSE ROUND(SUM(CASE WHEN ${answersTable.answer} = 'me_too' THEN 100.0 ELSE 0 END) / COUNT(${answersTable.id}))
+        END
+      `,
+      answerCount: count(answersTable.id),
+    })
+    .from(submissionsTable)
+    .leftJoin(habitsTable, eq(habitsTable.id, submissionsTable.habitId))
+    .leftJoin(answersTable, eq(answersTable.habitId, habitsTable.id))
+    .where(eq(submissionsTable.submitterSessionId, params.data.sessionId))
+    .groupBy(submissionsTable.id, habitsTable.id, habitsTable.meTooPctDefault)
+    .orderBy(submissionsTable.submittedAt);
+
+  res.json(
+    GetMySubmissionsResponse.parse(
+      rows.map((r) => ({
+        ...r,
+        meTooPct: r.meTooPct !== null ? Number(r.meTooPct) : null,
+        answerCount: Number(r.answerCount),
+      }))
+    )
+  );
 });
 
 router.get("/admin/submissions", async (req, res): Promise<void> => {
