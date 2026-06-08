@@ -10,13 +10,22 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: habits
+    description: Habit feed
+  - name: answers
+    description: User swipe answers
+  - name: submissions
+    description: User habit submissions
+  - name: admin
+    description: Admin operations
+  - name: traitScores
+    description: Per-session trait scores
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +33,313 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /habits:
+    get:
+      operationId: getHabits
+      tags: [habits]
+      summary: List active habits with real-time percentages
+      responses:
+        "200":
+          description: List of habits
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Habit"
+
+  /answers:
+    post:
+      operationId: recordAnswer
+      tags: [answers]
+      summary: Record a swipe answer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnswerInput"
+      responses:
+        "201":
+          description: Answer recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Answer"
+        "400":
+          description: Invalid input
+
+  /submissions:
+    post:
+      operationId: createSubmission
+      tags: [submissions]
+      summary: Submit a new habit anonymously
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmissionInput"
+      responses:
+        "201":
+          description: Submission created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Submission"
+        "400":
+          description: Invalid input
+
+  /admin/submissions:
+    get:
+      operationId: listSubmissions
+      tags: [admin]
+      summary: List all submissions (admin)
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+          required: false
+      responses:
+        "200":
+          description: List of submissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Submission"
+
+  /admin/submissions/{id}:
+    patch:
+      operationId: updateSubmission
+      tags: [admin]
+      summary: Approve, reject, or edit a submission
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmissionUpdate"
+      responses:
+        "200":
+          description: Updated submission
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Submission"
+        "400":
+          description: Invalid input
+        "404":
+          description: Not found
+
+  /admin/habits/{id}:
+    patch:
+      operationId: updateHabit
+      tags: [admin]
+      summary: Edit a habit (admin)
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HabitUpdate"
+      responses:
+        "200":
+          description: Updated habit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Habit"
+        "404":
+          description: Not found
+
+  /trait-scores/{sessionId}:
+    get:
+      operationId: getTraitScores
+      tags: [traitScores]
+      summary: Get trait scores for a session
+      parameters:
+        - in: path
+          name: sessionId
+          schema:
+            type: string
+          required: true
+      responses:
+        "200":
+          description: Trait scores
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TraitScoreData"
+        "404":
+          description: Not found
+    put:
+      operationId: upsertTraitScores
+      tags: [traitScores]
+      summary: Create or replace trait scores for a session
+      parameters:
+        - in: path
+          name: sessionId
+          schema:
+            type: string
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TraitScoreInput"
+      responses:
+        "200":
+          description: Upserted trait scores
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TraitScoreData"
+        "400":
+          description: Invalid input
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
 
+    Habit:
+      type: object
+      required: [id, question, category, meTooPct, traits, source, status, answerCount]
+      properties:
+        id:
+          type: integer
+        question:
+          type: string
+        category:
+          type: string
+        meTooPct:
+          type: number
+        traits:
+          type: object
+          additionalProperties:
+            type: number
+        source:
+          type: string
+        status:
+          type: string
+        answerCount:
+          type: integer
+
+    HabitUpdate:
+      type: object
+      properties:
+        question:
+          type: string
+        category:
+          type: string
+        status:
+          type: string
+
+    Submission:
+      type: object
+      required: [id, question, status, submittedAt]
+      properties:
+        id:
+          type: integer
+        question:
+          type: string
+        status:
+          type: string
+        submittedAt:
+          type: string
+          format: date-time
+        habitId:
+          type: ["integer", "null"]
+
+    SubmissionInput:
+      type: object
+      required: [question]
+      properties:
+        question:
+          type: string
+          minLength: 10
+          maxLength: 280
+
+    SubmissionUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+        question:
+          type: string
+
+    Answer:
+      type: object
+      required: [id, habitId, sessionId, answer, answeredAt]
+      properties:
+        id:
+          type: integer
+        habitId:
+          type: integer
+        sessionId:
+          type: string
+        answer:
+          type: string
+        answeredAt:
+          type: string
+          format: date-time
+
+    AnswerInput:
+      type: object
+      required: [habitId, sessionId, answer]
+      properties:
+        habitId:
+          type: integer
+        sessionId:
+          type: string
+        answer:
+          type: string
+
+    TraitScoreData:
+      type: object
+      required: [sessionId, scores, maxScores]
+      properties:
+        sessionId:
+          type: string
+        scores:
+          type: object
+          additionalProperties:
+            type: number
+        maxScores:
+          type: object
+          additionalProperties:
+            type: number
+
+    TraitScoreInput:
+      type: object
+      required: [scores, maxScores]
+      properties:
+        scores:
+          type: object
+          additionalProperties:
+            type: number
+        maxScores:
+          type: object
+          additionalProperties:
+            type: number

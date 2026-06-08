@@ -6,6 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface HealthStatus {
-  status: string;
+export interface SubmissionInput {
+  /**
+     * @minLength 10
+     * @maxLength 280
+     */
+  question: string;
 }

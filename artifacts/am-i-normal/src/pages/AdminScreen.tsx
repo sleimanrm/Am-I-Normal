@@ -1,11 +1,16 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, X, Clock, ShieldCheck } from "lucide-react";
-import { getSubmissions, updateSubmissionStatus } from "../data/submissions";
-import type { Submission, SubmissionStatus } from "../types";
+import { Check, X, Clock, ShieldCheck, Pencil, Save } from "lucide-react";
+import {
+  useListSubmissions,
+  useUpdateSubmission,
+  getListSubmissionsQueryKey,
+} from "@workspace/api-client-react";
+import type { Submission } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 
-function timeAgo(ts: number): string {
-  const diff = Date.now() - ts;
+function timeAgo(ts: string | Date): string {
+  const diff = Date.now() - new Date(ts).getTime();
   const mins = Math.floor(diff / 60_000);
   if (mins < 1) return "just now";
   if (mins < 60) return `${mins}m ago`;
@@ -19,8 +24,10 @@ function SubmissionCard({
   onAction,
 }: {
   submission: Submission;
-  onAction: (id: string, status: SubmissionStatus) => void;
+  onAction: (id: number, status: string, question?: string) => void;
 }) {
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState(submission.question);
   const isPending = submission.status === "pending";
 
   return (
@@ -32,13 +39,22 @@ function SubmissionCard({
       transition={{ duration: 0.25 }}
       className="bg-white rounded-2xl p-5 shadow-sm border border-purple-100"
     >
-      <p className="text-gray-800 font-medium text-base leading-snug mb-3">
-        {submission.question}
-      </p>
+      {editing ? (
+        <textarea
+          value={editText}
+          onChange={(e) => setEditText(e.target.value)}
+          maxLength={280}
+          rows={3}
+          className="w-full resize-none rounded-xl border border-purple-200 bg-purple-50 p-3 text-gray-800 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-purple-300 mb-3"
+        />
+      ) : (
+        <p className="text-gray-800 font-medium text-base leading-snug mb-3">
+          {submission.question}
+        </p>
+      )}
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-0">
         <span className="text-gray-400 text-xs">{timeAgo(submission.submittedAt)}</span>
-
         <div className="flex items-center gap-2">
           {submission.status === "pending" && (
             <span className="flex items-center gap-1 text-amber-600 bg-amber-50 border border-amber-200 text-xs font-semibold px-2.5 py-1 rounded-full">
@@ -60,21 +76,45 @@ function SubmissionCard({
 
       {isPending && (
         <div className="flex gap-2 mt-4">
+          {editing ? (
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => {
+                setEditing(false);
+              }}
+              className="flex items-center justify-center gap-1.5 bg-gray-50 border border-gray-200 text-gray-500 font-bold text-sm py-2.5 px-4 rounded-xl hover:bg-gray-100 transition-colors"
+            >
+              Cancel
+            </motion.button>
+          ) : (
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setEditing(true)}
+              className="flex items-center justify-center gap-1.5 bg-purple-50 border border-purple-200 text-purple-700 font-bold text-sm py-2.5 px-4 rounded-xl hover:bg-purple-100 transition-colors"
+            >
+              <Pencil className="w-3.5 h-3.5" /> Edit
+            </motion.button>
+          )}
           <motion.button
             whileTap={{ scale: 0.95 }}
-            onClick={() => onAction(submission.id, "rejected")}
-            data-testid={`button-reject-${submission.id}`}
+            onClick={() => {
+              setEditing(false);
+              onAction(submission.id, "rejected");
+            }}
             className="flex-1 flex items-center justify-center gap-1.5 bg-red-50 border border-red-200 text-red-600 font-bold text-sm py-2.5 rounded-xl hover:bg-red-100 transition-colors"
           >
             <X className="w-4 h-4" /> Reject
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.95 }}
-            onClick={() => onAction(submission.id, "approved")}
-            data-testid={`button-approve-${submission.id}`}
+            onClick={() => {
+              setEditing(false);
+              onAction(submission.id, "approved", editing ? editText : undefined);
+            }}
             className="flex-1 flex items-center justify-center gap-1.5 bg-green-50 border border-green-200 text-green-700 font-bold text-sm py-2.5 rounded-xl hover:bg-green-100 transition-colors"
           >
-            <Check className="w-4 h-4" /> Approve
+            {editing ? <Save className="w-4 h-4" /> : <Check className="w-4 h-4" />}
+            {editing ? "Save & Approve" : "Approve"}
           </motion.button>
         </div>
       )}
@@ -85,12 +125,24 @@ function SubmissionCard({
 type FilterTab = "pending" | "approved" | "rejected";
 
 export default function AdminScreen() {
-  const [submissions, setSubmissions] = useState<Submission[]>(getSubmissions);
   const [activeTab, setActiveTab] = useState<FilterTab>("pending");
+  const queryClient = useQueryClient();
 
-  const handleAction = (id: string, status: SubmissionStatus) => {
-    updateSubmissionStatus(id, status);
-    setSubmissions(getSubmissions());
+  const { data: submissions = [], isLoading } = useListSubmissions();
+
+  const updateSubmission = useUpdateSubmission({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListSubmissionsQueryKey() });
+      },
+    },
+  });
+
+  const handleAction = (id: number, status: string, question?: string) => {
+    updateSubmission.mutate({
+      id,
+      data: { status, ...(question !== undefined ? { question } : {}) },
+    });
   };
 
   const pending = submissions.filter((s) => s.status === "pending");
@@ -110,7 +162,6 @@ export default function AdminScreen() {
     <div className="min-h-[100dvh] w-full bg-gradient-to-br from-[#7C3AED] to-[#4C1D95] p-4 pb-12">
       <div className="w-full max-w-[500px] mx-auto">
 
-        {/* Header */}
         <div className="flex items-center gap-3 py-6">
           <div className="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center">
             <ShieldCheck className="w-5 h-5 text-white" />
@@ -121,7 +172,6 @@ export default function AdminScreen() {
           </div>
         </div>
 
-        {/* Stats row */}
         <div className="grid grid-cols-3 gap-3 mb-6">
           {[
             { label: "Pending", value: pending.length, color: "bg-amber-400" },
@@ -136,13 +186,11 @@ export default function AdminScreen() {
           ))}
         </div>
 
-        {/* Tabs */}
         <div className="flex bg-white/10 rounded-2xl p-1 mb-5 gap-1">
           {tabs.map(({ key, label, count }) => (
             <button
               key={key}
               onClick={() => setActiveTab(key)}
-              data-testid={`tab-${key}`}
               className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${
                 activeTab === key
                   ? "bg-white text-purple-900 shadow-sm"
@@ -154,7 +202,6 @@ export default function AdminScreen() {
           ))}
         </div>
 
-        {/* List */}
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
@@ -164,10 +211,10 @@ export default function AdminScreen() {
             transition={{ duration: 0.2 }}
             className="flex flex-col gap-3"
           >
-            {visibleList.length === 0 ? (
-              <div className="text-center py-16 text-white/40 font-medium">
-                Nothing here yet.
-              </div>
+            {isLoading ? (
+              <div className="text-center py-16 text-white/40 font-medium">Loading…</div>
+            ) : visibleList.length === 0 ? (
+              <div className="text-center py-16 text-white/40 font-medium">Nothing here yet.</div>
             ) : (
               <AnimatePresence>
                 {visibleList.map((s) => (

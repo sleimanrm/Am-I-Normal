@@ -6,6 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface HealthStatus {
+export interface Submission {
+  id: number;
+  question: string;
   status: string;
+  submittedAt: Date;
+  /** @nullable */
+  habitId?: number | null;
 }

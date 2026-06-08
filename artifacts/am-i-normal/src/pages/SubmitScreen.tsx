@@ -2,41 +2,46 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Send, Check } from "lucide-react";
 import { useLocation } from "wouter";
-import { addSubmission } from "../data/submissions";
+import { useCreateSubmission } from "@workspace/api-client-react";
 
 export default function SubmitScreen() {
   const [, navigate] = useLocation();
   const [question, setQuestion] = useState("");
   const [submitted, setSubmitted] = useState(false);
-  const [error, setError] = useState("");
+  const [localError, setLocalError] = useState("");
+
+  const createSubmission = useCreateSubmission({
+    mutation: {
+      onSuccess: () => setSubmitted(true),
+    },
+  });
 
   const handleSubmit = () => {
     const trimmed = question.trim();
     if (trimmed.length < 10) {
-      setError("A little more detail would help — try at least 10 characters.");
+      setLocalError("A little more detail would help — try at least 10 characters.");
       return;
     }
     if (trimmed.length > 280) {
-      setError("Keep it under 280 characters.");
+      setLocalError("Keep it under 280 characters.");
       return;
     }
-    addSubmission(trimmed);
-    setSubmitted(true);
-    setError("");
+    setLocalError("");
+    createSubmission.mutate({ data: { question: trimmed } });
   };
+
+  const error = localError || (createSubmission.isError ? "Something went wrong. Please try again." : "");
 
   return (
     <div className="min-h-[100dvh] w-full flex items-center justify-center bg-gradient-to-br from-[#7C3AED] to-[#4C1D95] overflow-hidden p-4">
       <div className="w-full max-w-[390px]">
 
-        {/* Back button */}
         <motion.button
           initial={{ opacity: 0, x: -8 }}
           animate={{ opacity: 1, x: 0 }}
           whileTap={{ scale: 0.93 }}
           onClick={() => navigate("/")}
           className="flex items-center gap-2 text-white/70 font-semibold text-sm mb-6 hover:text-white transition-colors"
-          data-testid="button-back"
         >
           <ArrowLeft className="w-4 h-4" />
           Back
@@ -44,7 +49,6 @@ export default function SubmitScreen() {
 
         <AnimatePresence mode="wait">
 
-          {/* Form */}
           {!submitted && (
             <motion.div
               key="form"
@@ -68,12 +72,11 @@ export default function SubmitScreen() {
                   value={question}
                   onChange={(e) => {
                     setQuestion(e.target.value);
-                    setError("");
+                    setLocalError("");
                   }}
                   placeholder="Do you ever…"
                   maxLength={280}
                   rows={4}
-                  data-testid="input-habit-question"
                   className="w-full resize-none rounded-2xl border border-primary/20 bg-primary/5 p-4 text-card-foreground placeholder:text-card-foreground/30 text-base font-medium focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
                 />
                 <div className="flex justify-between items-center px-1">
@@ -90,11 +93,11 @@ export default function SubmitScreen() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.96 }}
                   onClick={handleSubmit}
-                  data-testid="button-submit"
-                  className="w-full bg-primary text-white font-bold text-lg py-4 rounded-full shadow-lg flex items-center justify-center gap-2"
+                  disabled={createSubmission.isPending}
+                  className="w-full bg-primary text-white font-bold text-lg py-4 rounded-full shadow-lg flex items-center justify-center gap-2 disabled:opacity-60"
                 >
                   <Send className="w-5 h-5" />
-                  Submit Anonymously
+                  {createSubmission.isPending ? "Submitting…" : "Submit Anonymously"}
                 </motion.button>
                 <p className="text-center text-card-foreground/35 text-xs">
                   Your name is never stored or shown.
@@ -103,7 +106,6 @@ export default function SubmitScreen() {
             </motion.div>
           )}
 
-          {/* Success */}
           {submitted && (
             <motion.div
               key="success"
@@ -132,7 +134,6 @@ export default function SubmitScreen() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.96 }}
                 onClick={() => navigate("/")}
-                data-testid="button-back-to-feed"
                 className="w-full bg-primary text-white font-bold text-lg py-4 rounded-full shadow-lg"
               >
                 Back to Discovering
