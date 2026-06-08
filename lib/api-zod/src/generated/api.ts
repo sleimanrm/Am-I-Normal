@@ -87,7 +87,8 @@ export const ListSubmissionsResponseItem = zod.object({
   "question": zod.string(),
   "status": zod.string(),
   "submittedAt": zod.coerce.date(),
-  "habitId": zod.number().nullish()
+  "habitId": zod.number().nullish(),
+  "moderationReason": zod.string().nullish()
 })
 export const ListSubmissionsResponse = zod.array(ListSubmissionsResponseItem)
 
@@ -101,7 +102,8 @@ export const UpdateSubmissionParams = zod.object({
 
 export const UpdateSubmissionBody = zod.object({
   "status": zod.string().optional(),
-  "question": zod.string().optional()
+  "question": zod.string().optional(),
+  "moderationReason": zod.string().nullish()
 })
 
 export const UpdateSubmissionResponse = zod.object({
@@ -109,7 +111,8 @@ export const UpdateSubmissionResponse = zod.object({
   "question": zod.string(),
   "status": zod.string(),
   "submittedAt": zod.coerce.date(),
-  "habitId": zod.number().nullish()
+  "habitId": zod.number().nullish(),
+  "moderationReason": zod.string().nullish()
 })
 
 

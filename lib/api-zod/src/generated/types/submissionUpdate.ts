@@ -9,4 +9,6 @@
 export interface SubmissionUpdate {
   status?: string;
   question?: string;
+  /** @nullable */
+  moderationReason?: string | null;
 }

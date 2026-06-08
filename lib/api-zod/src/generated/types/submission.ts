@@ -13,4 +13,6 @@ export interface Submission {
   submittedAt: Date;
   /** @nullable */
   habitId?: number | null;
+  /** @nullable */
+  moderationReason?: string | null;
 }

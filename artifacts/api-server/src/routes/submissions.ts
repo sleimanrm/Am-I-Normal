@@ -36,6 +36,7 @@ router.post("/submissions", async (req, res): Promise<void> => {
     status: submission.status,
     submittedAt: submission.submittedAt,
     habitId: submission.habitId ?? null,
+    moderationReason: submission.moderationReason ?? null,
   });
 });
 
@@ -53,6 +54,7 @@ router.get("/submissions/mine", async (req, res): Promise<void> => {
       status: submissionsTable.status,
       submittedAt: submissionsTable.submittedAt,
       habitId: submissionsTable.habitId,
+      moderationReason: submissionsTable.moderationReason,
       meTooPct: sql<string | null>`
         CASE
           WHEN ${submissionsTable.habitId} IS NULL THEN NULL
@@ -125,7 +127,9 @@ router.patch("/admin/submissions/:id", async (req, res): Promise<void> => {
   const updateValues: Partial<typeof submissionsTable.$inferInsert> = {};
   if (body.data.status !== undefined) updateValues.status = body.data.status;
   if (body.data.question !== undefined) updateValues.question = body.data.question.trim();
+  if ("moderationReason" in body.data) updateValues.moderationReason = body.data.moderationReason ?? null;
 
+  // Approving → create habit if not already approved, clear moderation reason
   if (body.data.status === "approved" && existing.status !== "approved") {
     const question = body.data.question?.trim() ?? existing.question;
     const [habit] = await db
@@ -140,8 +144,18 @@ router.patch("/admin/submissions/:id", async (req, res): Promise<void> => {
       })
       .returning();
     updateValues.habitId = habit.id;
+    updateValues.moderationReason = null;
   }
 
+  // Editing an already-approved submission → update the associated habit text too
+  if (body.data.status === undefined && body.data.question && existing.status === "approved" && existing.habitId) {
+    await db
+      .update(habitsTable)
+      .set({ question: body.data.question.trim() })
+      .where(eq(habitsTable.id, existing.habitId));
+  }
+
+  // Rejecting → archive associated habit if any
   if (body.data.status === "rejected" && existing.habitId) {
     await db
       .update(habitsTable)

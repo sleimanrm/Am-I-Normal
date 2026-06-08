@@ -10,6 +10,7 @@ export const submissionsTable = pgTable(
     status: text("status").notNull().default("pending"),
     habitId: integer("habit_id"),
     submitterSessionId: text("submitter_session_id"),
+    moderationReason: text("moderation_reason"),
     submittedAt: timestamp("submitted_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
   },

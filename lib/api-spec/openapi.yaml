@@ -294,6 +294,8 @@ components:
           format: date-time
         habitId:
           type: ["integer", "null"]
+        moderationReason:
+          type: ["string", "null"]
 
     MySubmission:
       type: object
@@ -333,6 +335,8 @@ components:
           type: string
         question:
           type: string
+        moderationReason:
+          type: ["string", "null"]
 
     Answer:
       type: object

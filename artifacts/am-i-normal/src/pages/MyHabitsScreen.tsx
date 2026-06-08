@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Clock, CheckCircle2, XCircle, Users, Percent, Trophy, Fingerprint } from "lucide-react";
+import { ArrowLeft, Clock, CheckCircle2, XCircle, Users, Percent, Trophy, Fingerprint, AlertCircle } from "lucide-react";
 import { useLocation } from "wouter";
 import { useGetMySubmissions } from "@workspace/api-client-react";
 import type { MySubmission } from "@workspace/api-client-react";

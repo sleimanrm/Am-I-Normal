@@ -35,6 +35,8 @@ export interface Submission {
   submittedAt: string;
   /** @nullable */
   habitId?: number | null;
+  /** @nullable */
+  moderationReason?: string | null;
 }
 
 export interface MySubmission {
@@ -61,6 +63,8 @@ export interface SubmissionInput {
 export interface SubmissionUpdate {
   status?: string;
   question?: string;
+  /** @nullable */
+  moderationReason?: string | null;
 }
 
 export interface Answer {
