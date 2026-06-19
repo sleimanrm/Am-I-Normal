@@ -25,6 +25,7 @@ import type {
   FlaggedHabit,
   FlaggedHabitUpdate,
   GetMySubmissionsParams,
+  GetTrendingParams,
   Habit,
   HabitUpdate,
   HealthStatus,
@@ -36,7 +37,8 @@ import type {
   SubmissionInput,
   SubmissionUpdate,
   TraitScoreData,
-  TraitScoreInput
+  TraitScoreInput,
+  TrendingResponse
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -193,6 +195,90 @@ export function useGetHabits<TData = Awaited<ReturnType<typeof getHabits>>, TErr
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetHabitsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetTrendingUrl = (params?: GetTrendingParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/habits/trending?${stringifiedParams}` : `/api/habits/trending`
+}
+
+/**
+ * @summary Trending habits — most relatable, surprising, divisive, and newest
+ */
+export const getTrending = async (params?: GetTrendingParams, options?: RequestInit): Promise<TrendingResponse> => {
+
+  return customFetch<TrendingResponse>(getGetTrendingUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTrendingQueryKey = (params?: GetTrendingParams,) => {
+    return [
+    `/api/habits/trending`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetTrendingQueryOptions = <TData = Awaited<ReturnType<typeof getTrending>>, TError = ErrorType<unknown>>(params?: GetTrendingParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTrending>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTrendingQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTrending>>> = ({ signal }) => getTrending(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTrending>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTrendingQueryResult = NonNullable<Awaited<ReturnType<typeof getTrending>>>
+export type GetTrendingQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Trending habits — most relatable, surprising, divisive, and newest
+ */
+
+export function useGetTrending<TData = Awaited<ReturnType<typeof getTrending>>, TError = ErrorType<unknown>>(
+ params?: GetTrendingParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTrending>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTrendingQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

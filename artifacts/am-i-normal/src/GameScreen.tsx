@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from "framer-motion";
-import { Check, X, ArrowRight, Sparkles, Flame, Brain, Plus, ClipboardList, Flag } from "lucide-react";
+import { Check, X, ArrowRight, Sparkles, Flame, Brain, Plus, ClipboardList, Flag, TrendingUp } from "lucide-react";
 import { useLocation } from "wouter";
 import {
   useGetHabits,
@@ -667,6 +667,18 @@ export default function GameScreen() {
               title="My submitted habits"
             >
               <ClipboardList className="w-6 h-6 text-white" />
+            </motion.button>
+            <motion.button
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => navigate("/trending")}
+              className="fixed bottom-6 left-1/2 -translate-x-1/2 w-14 h-14 bg-white/15 backdrop-blur border border-white/25 rounded-full shadow-xl shadow-black/20 flex items-center justify-center z-50"
+              title="Trending habits"
+            >
+              <TrendingUp className="w-6 h-6 text-white" />
             </motion.button>
             <motion.button
               initial={{ opacity: 0, scale: 0.8 }}

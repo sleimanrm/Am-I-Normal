@@ -5,6 +5,23 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface TrendingHabit {
+  id: number;
+  question: string;
+  meTooPct: number;
+  answerCount: number;
+  category: string;
+  /** @nullable */
+  userAnswer: string | null;
+}
+
+export interface TrendingResponse {
+  mostRelatable: TrendingHabit | null;
+  mostSurprising: TrendingHabit | null;
+  mostDivisive: TrendingHabit | null;
+  newFromCommunity: TrendingHabit[];
+}
+
 export interface HealthStatus {
   status: string;
 }
@@ -134,6 +151,10 @@ export interface TraitScoreInput {
   scores: TraitScoreInputScores;
   maxScores: TraitScoreInputMaxScores;
 }
+
+export type GetTrendingParams = {
+sessionId?: string;
+};
 
 export type GetMySubmissionsParams = {
 sessionId: string;

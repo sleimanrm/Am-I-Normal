@@ -49,6 +49,25 @@ paths:
                 items:
                   $ref: "#/components/schemas/Habit"
 
+  /habits/trending:
+    get:
+      operationId: getTrending
+      tags: [habits]
+      summary: Trending habits — most relatable, surprising, divisive, and newest
+      parameters:
+        - in: query
+          name: sessionId
+          schema:
+            type: string
+          required: false
+      responses:
+        "200":
+          description: Trending habit groups
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrendingResponse"
+
   /answers:
     post:
       operationId: recordAnswer
@@ -308,6 +327,44 @@ paths:
 
 components:
   schemas:
+    TrendingHabit:
+      type: object
+      required: [id, question, meTooPct, answerCount, category, userAnswer]
+      properties:
+        id:
+          type: integer
+        question:
+          type: string
+        meTooPct:
+          type: number
+        answerCount:
+          type: integer
+        category:
+          type: string
+        userAnswer:
+          type: ["string", "null"]
+
+    TrendingResponse:
+      type: object
+      required: [mostRelatable, mostSurprising, mostDivisive, newFromCommunity]
+      properties:
+        mostRelatable:
+          oneOf:
+            - $ref: "#/components/schemas/TrendingHabit"
+            - type: "null"
+        mostSurprising:
+          oneOf:
+            - $ref: "#/components/schemas/TrendingHabit"
+            - type: "null"
+        mostDivisive:
+          oneOf:
+            - $ref: "#/components/schemas/TrendingHabit"
+            - type: "null"
+        newFromCommunity:
+          type: array
+          items:
+            $ref: "#/components/schemas/TrendingHabit"
+
     HealthStatus:
       type: object
       required: [status]

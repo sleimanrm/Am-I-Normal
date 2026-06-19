@@ -35,6 +35,49 @@ export const GetHabitsResponse = zod.array(GetHabitsResponseItem)
 
 
 /**
+ * @summary Trending habits — most relatable, surprising, divisive, and newest
+ */
+export const GetTrendingQueryParams = zod.object({
+  "sessionId": zod.coerce.string().optional()
+})
+
+export const GetTrendingResponse = zod.object({
+  "mostRelatable": zod.union([zod.object({
+  "id": zod.number(),
+  "question": zod.string(),
+  "meTooPct": zod.number(),
+  "answerCount": zod.number(),
+  "category": zod.string(),
+  "userAnswer": zod.string().nullable()
+}),zod.null()]),
+  "mostSurprising": zod.union([zod.object({
+  "id": zod.number(),
+  "question": zod.string(),
+  "meTooPct": zod.number(),
+  "answerCount": zod.number(),
+  "category": zod.string(),
+  "userAnswer": zod.string().nullable()
+}),zod.null()]),
+  "mostDivisive": zod.union([zod.object({
+  "id": zod.number(),
+  "question": zod.string(),
+  "meTooPct": zod.number(),
+  "answerCount": zod.number(),
+  "category": zod.string(),
+  "userAnswer": zod.string().nullable()
+}),zod.null()]),
+  "newFromCommunity": zod.array(zod.object({
+  "id": zod.number(),
+  "question": zod.string(),
+  "meTooPct": zod.number(),
+  "answerCount": zod.number(),
+  "category": zod.string(),
+  "userAnswer": zod.string().nullable()
+}))
+})
+
+
+/**
  * @summary Record a swipe answer
  */
 export const RecordAnswerBody = zod.object({

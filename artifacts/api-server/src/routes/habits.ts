@@ -3,6 +3,8 @@ import { db, habitsTable, answersTable, reportsTable } from "@workspace/db";
 import { eq, sql, count, desc } from "drizzle-orm";
 import {
   GetHabitsResponse,
+  GetTrendingQueryParams,
+  GetTrendingResponse,
   UpdateHabitBody,
   UpdateHabitParams,
   UpdateHabitResponse,
@@ -52,6 +54,90 @@ router.get("/habits", async (req, res): Promise<void> => {
   }));
 
   res.json(GetHabitsResponse.parse(habits));
+});
+
+// ── Trending habits ───────────────────────────────────────────────────────────
+
+router.get("/habits/trending", async (req, res): Promise<void> => {
+  const params = GetTrendingQueryParams.safeParse(req.query);
+  const sessionId = params.success && params.data.sessionId ? params.data.sessionId : null;
+
+  const userAnswerExpr = sessionId
+    ? sql<string | null>`MAX(CASE WHEN ${answersTable.sessionId} = ${sessionId} THEN ${answersTable.answer} ELSE NULL END)`
+    : sql<null>`NULL`;
+
+  const rows = await db
+    .select({
+      id: habitsTable.id,
+      question: habitsTable.question,
+      category: habitsTable.category,
+      source: habitsTable.source,
+      createdAt: habitsTable.createdAt,
+      meTooPct: sql<string>`
+        CASE
+          WHEN COUNT(${answersTable.id}) = 0 THEN ${habitsTable.meTooPctDefault}::numeric
+          ELSE ROUND(SUM(CASE WHEN ${answersTable.answer} = 'me_too' THEN 100.0 ELSE 0 END) / COUNT(${answersTable.id}))
+        END
+      `,
+      answerCount: count(answersTable.id),
+      userAnswer: userAnswerExpr,
+    })
+    .from(habitsTable)
+    .leftJoin(answersTable, eq(answersTable.habitId, habitsTable.id))
+    .where(eq(habitsTable.status, "active"))
+    .groupBy(habitsTable.id, habitsTable.createdAt);
+
+  const habits = rows.map((r) => ({
+    id: r.id,
+    question: r.question,
+    category: r.category,
+    source: r.source,
+    createdAt: r.createdAt,
+    meTooPct: Number(r.meTooPct),
+    answerCount: Number(r.answerCount),
+    userAnswer: r.userAnswer ?? null,
+  }));
+
+  // Use all habits for spotlight — meTooPct already falls back to meTooPctDefault when no answers
+  const mostRelatable =
+    habits.length > 0
+      ? habits.reduce((a, b) => (a.meTooPct >= b.meTooPct ? a : b))
+      : null;
+
+  const mostSurprising =
+    habits.length > 0
+      ? habits.reduce((a, b) => (a.meTooPct <= b.meTooPct ? a : b))
+      : null;
+
+  const mostDivisive =
+    habits.length > 0
+      ? habits.reduce((a, b) =>
+          Math.abs(a.meTooPct - 50) <= Math.abs(b.meTooPct - 50) ? a : b
+        )
+      : null;
+
+  const newFromCommunity = habits
+    .filter((h) => h.source === "community")
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    .slice(0, 8);
+
+  const toHabit = (h: (typeof habits)[0]) => ({
+    id: h.id,
+    question: h.question,
+    meTooPct: h.meTooPct,
+    answerCount: h.answerCount,
+    category: h.category,
+    userAnswer: h.userAnswer,
+  });
+
+  res.json(
+    GetTrendingResponse.parse({
+      mostRelatable: mostRelatable ? toHabit(mostRelatable) : null,
+      mostSurprising: mostSurprising ? toHabit(mostSurprising) : null,
+      mostDivisive: mostDivisive ? toHabit(mostDivisive) : null,
+      newFromCommunity: newFromCommunity.map(toHabit),
+    })
+  );
 });
 
 // ── Report a habit ────────────────────────────────────────────────────────────
