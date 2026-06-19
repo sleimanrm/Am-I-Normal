@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from "framer-motion";
-import { Check, X, ArrowRight, Sparkles, Flame, Brain, Plus, ClipboardList, Flag, TrendingUp } from "lucide-react";
+import { Check, X, ArrowRight, Sparkles, Flame, Brain, Plus, ClipboardList, Flag, TrendingUp, LayoutGrid } from "lucide-react";
 import { useLocation } from "wouter";
 import {
   useGetHabits,
@@ -652,47 +652,54 @@ export default function GameScreen() {
         </AnimatePresence>
       </div>
 
-      {/* Floating buttons */}
+      {/* Bottom nav dock */}
       <AnimatePresence>
         {showFloatingAdd && (
-          <>
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 16 }}
+            transition={{ type: "spring", bounce: 0.3 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-3 py-2 shadow-2xl shadow-black/30"
+          >
             <motion.button
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              whileHover={{ scale: 1.1 }}
+              whileHover={{ scale: 1.12 }}
               whileTap={{ scale: 0.9 }}
               onClick={() => navigate("/my-habits")}
-              className="fixed bottom-6 left-6 w-14 h-14 bg-white/15 backdrop-blur border border-white/25 rounded-full shadow-xl shadow-black/20 flex items-center justify-center z-50"
               title="My submitted habits"
+              className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 transition-colors flex items-center justify-center"
             >
-              <ClipboardList className="w-6 h-6 text-white" />
+              <ClipboardList className="w-5 h-5 text-white" />
             </motion.button>
             <motion.button
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              whileHover={{ scale: 1.1 }}
+              whileHover={{ scale: 1.12 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => navigate("/categories")}
+              title="Browse categories"
+              className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 transition-colors flex items-center justify-center"
+            >
+              <LayoutGrid className="w-5 h-5 text-white" />
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.12 }}
               whileTap={{ scale: 0.9 }}
               onClick={() => navigate("/trending")}
-              className="fixed bottom-6 left-1/2 -translate-x-1/2 w-14 h-14 bg-white/15 backdrop-blur border border-white/25 rounded-full shadow-xl shadow-black/20 flex items-center justify-center z-50"
               title="Trending habits"
+              className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 transition-colors flex items-center justify-center"
             >
-              <TrendingUp className="w-6 h-6 text-white" />
+              <TrendingUp className="w-5 h-5 text-white" />
             </motion.button>
+            <div className="w-px h-7 bg-white/20 mx-1" />
             <motion.button
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              whileHover={{ scale: 1.1 }}
+              whileHover={{ scale: 1.12 }}
               whileTap={{ scale: 0.9 }}
               onClick={() => navigate("/submit")}
-              className="fixed bottom-6 right-6 w-14 h-14 bg-white rounded-full shadow-xl shadow-black/25 flex items-center justify-center z-50"
               title="Share your weird habit"
+              className="w-12 h-12 rounded-full bg-white shadow-lg shadow-black/20 flex items-center justify-center"
             >
-              <Plus className="w-7 h-7 text-purple-700" />
+              <Plus className="w-6 h-6 text-purple-700" />
             </motion.button>
-          </>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

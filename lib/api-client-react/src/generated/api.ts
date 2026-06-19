@@ -22,8 +22,10 @@ import type {
 import type {
   Answer,
   AnswerInput,
+  CategorySummary,
   FlaggedHabit,
   FlaggedHabitUpdate,
+  GetHabitsByCategoryParams,
   GetMySubmissionsParams,
   GetTrendingParams,
   Habit,
@@ -38,6 +40,7 @@ import type {
   SubmissionUpdate,
   TraitScoreData,
   TraitScoreInput,
+  TrendingHabit,
   TrendingResponse
 } from './api.schemas';
 
@@ -279,6 +282,167 @@ export function useGetTrending<TData = Awaited<ReturnType<typeof getTrending>>, 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetTrendingQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetCategoriesUrl = () => {
+
+
+
+
+  return `/api/habits/categories`
+}
+
+/**
+ * @summary List all habit categories with counts
+ */
+export const getCategories = async ( options?: RequestInit): Promise<CategorySummary[]> => {
+
+  return customFetch<CategorySummary[]>(getGetCategoriesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCategoriesQueryKey = () => {
+    return [
+    `/api/habits/categories`
+    ] as const;
+    }
+
+
+export const getGetCategoriesQueryOptions = <TData = Awaited<ReturnType<typeof getCategories>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCategories>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCategoriesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCategories>>> = ({ signal }) => getCategories({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCategories>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCategoriesQueryResult = NonNullable<Awaited<ReturnType<typeof getCategories>>>
+export type GetCategoriesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all habit categories with counts
+ */
+
+export function useGetCategories<TData = Awaited<ReturnType<typeof getCategories>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCategories>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCategoriesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetHabitsByCategoryUrl = (params: GetHabitsByCategoryParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/habits/by-category?${stringifiedParams}` : `/api/habits/by-category`
+}
+
+/**
+ * @summary Habits filtered by category with optional session answers
+ */
+export const getHabitsByCategory = async (params: GetHabitsByCategoryParams, options?: RequestInit): Promise<TrendingHabit[]> => {
+
+  return customFetch<TrendingHabit[]>(getGetHabitsByCategoryUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetHabitsByCategoryQueryKey = (params?: GetHabitsByCategoryParams,) => {
+    return [
+    `/api/habits/by-category`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetHabitsByCategoryQueryOptions = <TData = Awaited<ReturnType<typeof getHabitsByCategory>>, TError = ErrorType<void>>(params: GetHabitsByCategoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getHabitsByCategory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetHabitsByCategoryQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getHabitsByCategory>>> = ({ signal }) => getHabitsByCategory(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getHabitsByCategory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetHabitsByCategoryQueryResult = NonNullable<Awaited<ReturnType<typeof getHabitsByCategory>>>
+export type GetHabitsByCategoryQueryError = ErrorType<void>
+
+
+/**
+ * @summary Habits filtered by category with optional session answers
+ */
+
+export function useGetHabitsByCategory<TData = Awaited<ReturnType<typeof getHabitsByCategory>>, TError = ErrorType<void>>(
+ params: GetHabitsByCategoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getHabitsByCategory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetHabitsByCategoryQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

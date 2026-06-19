@@ -8,9 +8,11 @@
 
 export * from './answer';
 export * from './answerInput';
+export * from './categorySummary';
 export * from './flaggedHabit';
 export * from './flaggedHabitTopReasonsItem';
 export * from './flaggedHabitUpdate';
+export * from './getHabitsByCategoryParams';
 export * from './getMySubmissionsParams';
 export * from './getTrendingParams';
 export * from './habit';

@@ -1,10 +1,13 @@
 import { Router, type IRouter } from "express";
 import { db, habitsTable, answersTable, reportsTable } from "@workspace/db";
-import { eq, sql, count, desc } from "drizzle-orm";
+import { eq, sql, count, desc, and } from "drizzle-orm";
 import {
   GetHabitsResponse,
   GetTrendingQueryParams,
   GetTrendingResponse,
+  GetCategoriesResponse,
+  GetHabitsByCategoryQueryParams,
+  GetHabitsByCategoryResponse,
   UpdateHabitBody,
   UpdateHabitParams,
   UpdateHabitResponse,
@@ -138,6 +141,71 @@ router.get("/habits/trending", async (req, res): Promise<void> => {
       newFromCommunity: newFromCommunity.map(toHabit),
     })
   );
+});
+
+// ── Categories list ───────────────────────────────────────────────────────────
+
+router.get("/habits/categories", async (_req, res): Promise<void> => {
+  const rows = await db
+    .select({
+      category: habitsTable.category,
+      count: count(habitsTable.id),
+    })
+    .from(habitsTable)
+    .where(eq(habitsTable.status, "active"))
+    .groupBy(habitsTable.category)
+    .orderBy(habitsTable.category);
+
+  res.json(GetCategoriesResponse.parse(rows.map((r) => ({ ...r, count: Number(r.count) }))));
+});
+
+// ── Habits by category ────────────────────────────────────────────────────────
+
+router.get("/habits/by-category", async (req, res): Promise<void> => {
+  const params = GetHabitsByCategoryQueryParams.safeParse(req.query);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const { category, sessionId = null } = params.data;
+
+  const userAnswerExpr = sessionId
+    ? sql<string | null>`MAX(CASE WHEN ${answersTable.sessionId} = ${sessionId} THEN ${answersTable.answer} ELSE NULL END)`
+    : sql<null>`NULL`;
+
+  const rows = await db
+    .select({
+      id: habitsTable.id,
+      question: habitsTable.question,
+      category: habitsTable.category,
+      source: habitsTable.source,
+      createdAt: habitsTable.createdAt,
+      meTooPct: sql<string>`
+        CASE
+          WHEN COUNT(${answersTable.id}) = 0 THEN ${habitsTable.meTooPctDefault}::numeric
+          ELSE ROUND(SUM(CASE WHEN ${answersTable.answer} = 'me_too' THEN 100.0 ELSE 0 END) / COUNT(${answersTable.id}))
+        END
+      `,
+      answerCount: count(answersTable.id),
+      userAnswer: userAnswerExpr,
+    })
+    .from(habitsTable)
+    .leftJoin(answersTable, eq(answersTable.habitId, habitsTable.id))
+    .where(and(eq(habitsTable.status, "active"), eq(habitsTable.category, category)))
+    .groupBy(habitsTable.id, habitsTable.createdAt)
+    .orderBy(habitsTable.id);
+
+  const habits = rows.map((r) => ({
+    id: r.id,
+    question: r.question,
+    category: r.category,
+    meTooPct: Number(r.meTooPct),
+    answerCount: Number(r.answerCount),
+    userAnswer: r.userAnswer ?? null,
+  }));
+
+  res.json(GetHabitsByCategoryResponse.parse(habits));
 });
 
 // ── Report a habit ────────────────────────────────────────────────────────────

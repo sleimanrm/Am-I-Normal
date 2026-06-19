@@ -22,6 +22,11 @@ export interface TrendingResponse {
   newFromCommunity: TrendingHabit[];
 }
 
+export interface CategorySummary {
+  category: string;
+  count: number;
+}
+
 export interface HealthStatus {
   status: string;
 }
@@ -153,6 +158,11 @@ export interface TraitScoreInput {
 }
 
 export type GetTrendingParams = {
+sessionId?: string;
+};
+
+export type GetHabitsByCategoryParams = {
+category: string;
 sessionId?: string;
 };
 

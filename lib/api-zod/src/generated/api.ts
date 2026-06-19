@@ -78,6 +78,35 @@ export const GetTrendingResponse = zod.object({
 
 
 /**
+ * @summary List all habit categories with counts
+ */
+export const GetCategoriesResponseItem = zod.object({
+  "category": zod.string(),
+  "count": zod.number()
+})
+export const GetCategoriesResponse = zod.array(GetCategoriesResponseItem)
+
+
+/**
+ * @summary Habits filtered by category with optional session answers
+ */
+export const GetHabitsByCategoryQueryParams = zod.object({
+  "category": zod.coerce.string(),
+  "sessionId": zod.coerce.string().optional()
+})
+
+export const GetHabitsByCategoryResponseItem = zod.object({
+  "id": zod.number(),
+  "question": zod.string(),
+  "meTooPct": zod.number(),
+  "answerCount": zod.number(),
+  "category": zod.string(),
+  "userAnswer": zod.string().nullable()
+})
+export const GetHabitsByCategoryResponse = zod.array(GetHabitsByCategoryResponseItem)
+
+
+/**
  * @summary Record a swipe answer
  */
 export const RecordAnswerBody = zod.object({

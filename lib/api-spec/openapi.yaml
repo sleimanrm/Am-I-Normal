@@ -68,6 +68,49 @@ paths:
               schema:
                 $ref: "#/components/schemas/TrendingResponse"
 
+  /habits/categories:
+    get:
+      operationId: getCategories
+      tags: [habits]
+      summary: List all habit categories with counts
+      responses:
+        "200":
+          description: Category list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CategorySummary"
+
+  /habits/by-category:
+    get:
+      operationId: getHabitsByCategory
+      tags: [habits]
+      summary: Habits filtered by category with optional session answers
+      parameters:
+        - in: query
+          name: category
+          schema:
+            type: string
+          required: true
+        - in: query
+          name: sessionId
+          schema:
+            type: string
+          required: false
+      responses:
+        "200":
+          description: Habits in category
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TrendingHabit"
+        "400":
+          description: Missing category
+
   /answers:
     post:
       operationId: recordAnswer
@@ -364,6 +407,15 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TrendingHabit"
+
+    CategorySummary:
+      type: object
+      required: [category, count]
+      properties:
+        category:
+          type: string
+        count:
+          type: integer
 
     HealthStatus:
       type: object
