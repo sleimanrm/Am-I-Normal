@@ -72,7 +72,8 @@ export const GetMySubmissionsResponseItem = zod.object({
   "submittedAt": zod.coerce.date(),
   "habitId": zod.number().nullish(),
   "meTooPct": zod.number().nullish(),
-  "answerCount": zod.number()
+  "answerCount": zod.number(),
+  "reportCount": zod.number()
 })
 export const GetMySubmissionsResponse = zod.array(GetMySubmissionsResponseItem)
 

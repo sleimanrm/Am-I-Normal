@@ -428,7 +428,7 @@ components:
 
     MySubmission:
       type: object
-      required: [id, question, status, submittedAt, answerCount]
+      required: [id, question, status, submittedAt, answerCount, reportCount]
       properties:
         id:
           type: integer
@@ -444,6 +444,8 @@ components:
         meTooPct:
           type: ["number", "null"]
         answerCount:
+          type: integer
+        reportCount:
           type: integer
 
     SubmissionInput:

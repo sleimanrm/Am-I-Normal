@@ -63,6 +63,7 @@ router.get("/submissions/mine", async (req, res): Promise<void> => {
         END
       `,
       answerCount: count(answersTable.id),
+      reportCount: sql<number>`COALESCE(MAX(${habitsTable.reportCount}), 0)`,
     })
     .from(submissionsTable)
     .leftJoin(habitsTable, eq(habitsTable.id, submissionsTable.habitId))
@@ -77,6 +78,7 @@ router.get("/submissions/mine", async (req, res): Promise<void> => {
         ...r,
         meTooPct: r.meTooPct !== null ? Number(r.meTooPct) : null,
         answerCount: Number(r.answerCount),
+        reportCount: Number(r.reportCount),
       }))
     )
   );

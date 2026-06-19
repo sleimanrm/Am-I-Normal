@@ -16,4 +16,5 @@ export interface MySubmission {
   /** @nullable */
   meTooPct?: number | null;
   answerCount: number;
+  reportCount: number;
 }

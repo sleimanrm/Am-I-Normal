@@ -1,4 +1,4 @@
-import type { Trait, TraitScores, ProfileTrait, Answer } from "../types";
+import type { Trait, TraitScores, ProfileTrait, Answer, Category } from "../types";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 

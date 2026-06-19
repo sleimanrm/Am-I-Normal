@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Clock, CheckCircle2, XCircle, Users, Percent, Trophy, Fingerprint, AlertCircle } from "lucide-react";
+import { ArrowLeft, Clock, CheckCircle2, XCircle, Users, Percent, Trophy, Fingerprint, ChevronRight } from "lucide-react";
 import { useLocation } from "wouter";
-import { useGetMySubmissions } from "@workspace/api-client-react";
+import { useGetMySubmissions, getGetMySubmissionsQueryKey } from "@workspace/api-client-react";
 import type { MySubmission } from "@workspace/api-client-react";
 
 const SESSION_KEY = "ain_session_id";
@@ -48,20 +48,25 @@ function formatRespondents(n: number) {
 
 // ── Habit card ────────────────────────────────────────────────────────────────
 
-function HabitCard({ sub, delay = 0 }: { sub: MySubmission; delay?: number }) {
+function HabitCard({ sub, delay = 0, onPress }: { sub: MySubmission; delay?: number; onPress: () => void }) {
   const statusKey = (sub.status as Status) in STATUS_CONFIG ? (sub.status as Status) : "pending";
   const cfg = STATUS_CONFIG[statusKey];
   const StatusIcon = cfg.icon;
   const isApproved = sub.status === "approved";
 
   return (
-    <motion.div
+    <motion.button
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, type: "spring", bounce: 0.2, duration: 0.45 }}
-      className="w-full bg-card rounded-[1.5rem] p-5 shadow-lg shadow-black/10 flex flex-col gap-3"
+      whileTap={{ scale: 0.98 }}
+      onClick={onPress}
+      className="w-full bg-card rounded-[1.5rem] p-5 shadow-lg shadow-black/10 flex flex-col gap-3 text-left"
     >
-      <p className="text-card-foreground font-semibold text-base leading-snug">{sub.question}</p>
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-card-foreground font-semibold text-base leading-snug flex-1">{sub.question}</p>
+        <ChevronRight className="w-4 h-4 text-card-foreground/25 flex-shrink-0 mt-0.5" />
+      </div>
 
       <div className="flex flex-wrap gap-2 items-center">
         <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full border ${cfg.bg} ${cfg.text} ${cfg.border}`}>
@@ -77,7 +82,7 @@ function HabitCard({ sub, delay = 0 }: { sub: MySubmission; delay?: number }) {
             <div className="flex items-center gap-1 text-primary">
               <Percent className="w-3.5 h-3.5" />
               <span className="font-extrabold text-lg leading-none">
-                {sub.meTooPct !== null ? `${Math.round(sub.meTooPct)}` : "—"}
+                {sub.meTooPct != null ? `${Math.round(sub.meTooPct)}` : "—"}
               </span>
             </div>
             <span className="text-card-foreground/40 text-[10px] font-semibold uppercase tracking-wider">Me Too</span>
@@ -93,7 +98,7 @@ function HabitCard({ sub, delay = 0 }: { sub: MySubmission; delay?: number }) {
           </div>
         </div>
       )}
-    </motion.div>
+    </motion.button>
   );
 }
 
@@ -105,23 +110,30 @@ function HighlightCard({
   label,
   accent,
   delay,
+  onPress,
 }: {
   sub: MySubmission;
   icon: React.ReactNode;
   label: string;
   accent: string;
   delay: number;
+  onPress: () => void;
 }) {
   return (
-    <motion.div
+    <motion.button
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, type: "spring", bounce: 0.25, duration: 0.45 }}
-      className="w-full bg-card rounded-[1.5rem] p-5 shadow-lg shadow-black/10 flex flex-col gap-3"
+      whileTap={{ scale: 0.98 }}
+      onClick={onPress}
+      className="w-full bg-card rounded-[1.5rem] p-5 shadow-lg shadow-black/10 flex flex-col gap-3 text-left"
     >
-      <div className={`inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest ${accent}`}>
-        {icon}
-        {label}
+      <div className="flex items-start justify-between gap-2">
+        <div className={`inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest ${accent}`}>
+          {icon}
+          {label}
+        </div>
+        <ChevronRight className="w-4 h-4 text-card-foreground/25 flex-shrink-0" />
       </div>
       <p className="text-card-foreground font-semibold text-base leading-snug">{sub.question}</p>
       <div className="flex gap-3">
@@ -129,7 +141,7 @@ function HighlightCard({
           <div className="flex items-center gap-1 text-primary">
             <Percent className="w-3.5 h-3.5" />
             <span className="font-extrabold text-lg leading-none">
-              {sub.meTooPct !== null ? `${Math.round(sub.meTooPct)}` : "—"}
+              {sub.meTooPct != null ? `${Math.round(sub.meTooPct)}` : "—"}
             </span>
           </div>
           <span className="text-card-foreground/40 text-[10px] font-semibold uppercase tracking-wider">Me Too</span>
@@ -144,7 +156,7 @@ function HighlightCard({
           <span className="text-card-foreground/40 text-[10px] font-semibold uppercase tracking-wider">Responses</span>
         </div>
       </div>
-    </motion.div>
+    </motion.button>
   );
 }
 
@@ -152,11 +164,13 @@ function HighlightCard({
 
 export default function MyHabitsScreen() {
   const [, navigate] = useLocation();
+  const goToDetail = (id: number) => navigate(`/my-habits/${id}`);
   const sessionId = getSessionId();
 
+  const qParams = { sessionId: sessionId ?? "" };
   const { data: submissions = [], isLoading } = useGetMySubmissions(
-    { sessionId: sessionId ?? "" },
-    { query: { enabled: !!sessionId } }
+    qParams,
+    { query: { enabled: !!sessionId, queryKey: getGetMySubmissionsQueryKey(qParams) } }
   );
 
   const approvedWithPct = submissions.filter(
@@ -283,6 +297,7 @@ export default function MyHabitsScreen() {
                       label="Most Relatable"
                       accent="text-amber-400"
                       delay={0.05}
+                      onPress={() => goToDetail(mostRelatable.id)}
                     />
                   )}
 
@@ -293,6 +308,7 @@ export default function MyHabitsScreen() {
                       label="Most Unique"
                       accent="text-violet-400"
                       delay={0.1}
+                      onPress={() => goToDetail(mostUnique.id)}
                     />
                   )}
                 </div>
@@ -302,7 +318,7 @@ export default function MyHabitsScreen() {
               <div className="flex flex-col gap-3">
                 <p className="text-white/50 text-xs font-bold uppercase tracking-widest px-1">All Submitted</p>
                 {submissions.map((sub, i) => (
-                  <HabitCard key={sub.id} sub={sub} delay={0.05 + i * 0.04} />
+                  <HabitCard key={sub.id} sub={sub} delay={0.05 + i * 0.04} onPress={() => goToDetail(sub.id)} />
                 ))}
               </div>
 
