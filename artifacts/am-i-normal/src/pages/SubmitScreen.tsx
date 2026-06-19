@@ -117,7 +117,13 @@ export default function SubmitScreen() {
     createSubmission.mutate({ data: { question: trimmed, sessionId } });
   };
 
-  const error = validationError || (createSubmission.isError ? "Something went wrong. Please try again." : "");
+  const apiErr = createSubmission.error as { status?: number; data?: { error?: string } } | null;
+  const serverError = apiErr?.status === 409
+    ? "This habit has already been submitted."
+    : createSubmission.isError
+    ? "Something went wrong. Please try again."
+    : "";
+  const error = validationError || serverError;
 
   return (
     <div className="min-h-[100dvh] w-full flex items-center justify-center bg-gradient-to-br from-[#7C3AED] to-[#4C1D95] overflow-y-auto py-8 px-4">

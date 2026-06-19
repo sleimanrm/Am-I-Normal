@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, submissionsTable, habitsTable, answersTable } from "@workspace/db";
-import { eq, sql, count } from "drizzle-orm";
+import { eq, sql, count, or } from "drizzle-orm";
 import {
   CreateSubmissionBody,
   ListSubmissionsResponse,
@@ -18,6 +18,31 @@ router.post("/submissions", async (req, res): Promise<void> => {
   const body = CreateSubmissionBody.safeParse(req.body);
   if (!body.success) {
     res.status(400).json({ error: body.error.message });
+    return;
+  }
+
+  const normalised = body.data.question.trim().toLowerCase();
+
+  // Check for an identical habit already in the habits table
+  const existingHabit = await db
+    .select({ id: habitsTable.id })
+    .from(habitsTable)
+    .where(sql`LOWER(TRIM(${habitsTable.question})) = ${normalised}`)
+    .limit(1);
+
+  // Check for an identical non-rejected submission
+  const existingSubmission = await db
+    .select({ id: submissionsTable.id })
+    .from(submissionsTable)
+    .where(
+      or(
+        sql`LOWER(TRIM(${submissionsTable.question})) = ${normalised} AND ${submissionsTable.status} != 'rejected'`
+      )
+    )
+    .limit(1);
+
+  if (existingHabit.length > 0 || existingSubmission.length > 0) {
+    res.status(409).json({ error: "This habit has already been submitted." });
     return;
   }
 
