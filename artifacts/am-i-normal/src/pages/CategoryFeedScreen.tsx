@@ -97,6 +97,7 @@ function HabitCard({
 }) {
   const answered = habit.userAnswer ?? localAnswers[habit.id] ?? null;
   const pct = habit.meTooPct;
+  const hasVotes = habit.answerCount > 0;
 
   const barColor =
     pct >= 70 ? "bg-amber-400" : pct <= 35 ? "bg-rose-400" : "bg-violet-400";
@@ -128,32 +129,35 @@ function HabitCard({
 
       {/* Bar + percentage */}
       <div className="px-5 pb-4">
-        <div className="flex items-end gap-3 mb-2">
-          <span className="text-[2.75rem] font-black leading-none text-card-foreground">
-            {pct}%
-          </span>
-          <div className="pb-1.5">
-            <p className="text-xs font-bold text-primary uppercase tracking-wide">Me Too</p>
-            <p className="text-xs text-muted-foreground font-medium">{relatabilityLabel}</p>
-          </div>
-        </div>
-
-        {/* Progress bar */}
-        <div className="h-2 bg-muted rounded-full overflow-hidden">
-          <motion.div
-            className={`h-full rounded-full ${barColor}`}
-            initial={{ width: 0 }}
-            animate={{ width: `${pct}%` }}
-            transition={{ delay: index * 0.045 + 0.18, duration: 0.7, ease: "easeOut" }}
-          />
-        </div>
-
-        {/* Answer count */}
-        <p className="text-xs text-muted-foreground mt-1.5 font-medium">
-          {habit.answerCount > 0
-            ? `${habit.answerCount.toLocaleString()} ${habit.answerCount === 1 ? "person" : "people"} answered`
-            : "Be the first to answer"}
-        </p>
+        {hasVotes ? (
+          <>
+            <div className="flex items-end gap-3 mb-2">
+              <span className="text-[2.75rem] font-black leading-none text-card-foreground">
+                {pct}%
+              </span>
+              <div className="pb-1.5">
+                <p className="text-xs font-bold text-primary uppercase tracking-wide">Me Too</p>
+                <p className="text-xs text-muted-foreground font-medium">{relatabilityLabel}</p>
+              </div>
+            </div>
+            <div className="h-2 bg-muted rounded-full overflow-hidden">
+              <motion.div
+                className={`h-full rounded-full ${barColor}`}
+                initial={{ width: 0 }}
+                animate={{ width: `${pct}%` }}
+                transition={{ delay: index * 0.045 + 0.18, duration: 0.7, ease: "easeOut" }}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground mt-1.5 font-medium">
+              {habit.answerCount.toLocaleString()} {habit.answerCount === 1 ? "person" : "people"} answered
+            </p>
+          </>
+        ) : (
+          <>
+            <div className="h-2 bg-muted rounded-full mb-1.5" />
+            <p className="text-xs text-muted-foreground font-medium">Be the first to answer</p>
+          </>
+        )}
       </div>
 
       {/* Divider */}
@@ -214,13 +218,18 @@ export default function CategoryFeedScreen() {
     recordAnswer.mutate({ data: { habitId, answer, sessionId: sid } });
   };
 
-  // Aggregate stats
+  // Aggregate stats — only count habits with real votes for the percentage average
   const stats = useMemo(() => {
     if (!habits || habits.length === 0) return null;
     const totalAnswers = habits.reduce((sum, h) => sum + h.answerCount, 0);
-    const avgPct = Math.round(
-      habits.reduce((sum, h) => sum + h.meTooPct, 0) / habits.length
-    );
+    const habitsWithVotes = habits.filter((h) => h.answerCount > 0);
+    const avgPct =
+      habitsWithVotes.length > 0
+        ? Math.round(
+            habitsWithVotes.reduce((sum, h) => sum + h.meTooPct, 0) /
+              habitsWithVotes.length
+          )
+        : null;
     return { totalAnswers, avgPct };
   }, [habits]);
 
@@ -278,7 +287,7 @@ export default function CategoryFeedScreen() {
               />
               <div className="w-px h-8 bg-white/20" />
               <StatPill
-                value={`${stats.avgPct}%`}
+                value={stats.avgPct != null ? `${stats.avgPct}%` : "—"}
                 label="avg relatability"
               />
             </motion.div>
