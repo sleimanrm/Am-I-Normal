@@ -99,7 +99,7 @@ function HabitCard({
       transition={{ delay: index * 0.04, type: "spring", bounce: 0.25 }}
       className="bg-card rounded-2xl p-5 shadow-md shadow-black/5"
     >
-      <p className="font-bold text-foreground text-base leading-snug mb-4">
+      <p className="font-bold text-card-foreground text-[1.05rem] leading-snug mb-4">
         {habit.question}
       </p>
 
@@ -115,7 +115,7 @@ function HabitCard({
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className="text-2xl font-black text-foreground">{pct}%</span>
+          <span className="text-2xl font-black text-card-foreground">{pct}%</span>
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <span className="font-semibold">Me Too</span>
             {habit.answerCount > 0 && (
@@ -227,7 +227,7 @@ export default function CategoryFeedScreen() {
               className="bg-card rounded-2xl p-8 text-center"
             >
               <p className="text-4xl mb-3">🫙</p>
-              <p className="font-black text-foreground text-lg">Nothing here yet</p>
+              <p className="font-black text-card-foreground text-lg">Nothing here yet</p>
               <p className="text-muted-foreground text-sm mt-1">
                 No habits in this category yet.
               </p>
