@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, jsonb, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, jsonb, timestamp, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -10,6 +10,8 @@ export const habitsTable = pgTable("habits", {
   traits: jsonb("traits").$type<Record<string, number>>().notNull().default({}),
   source: text("source").notNull().default("curated"),
   status: text("status").notNull().default("active"),
+  reportCount: integer("report_count").notNull().default(0),
+  flagged: boolean("flagged").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

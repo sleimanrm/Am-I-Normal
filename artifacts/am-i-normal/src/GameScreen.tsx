@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from "framer-motion";
-import { Check, X, ArrowRight, Sparkles, Flame, Brain, Plus, ClipboardList } from "lucide-react";
+import { Check, X, ArrowRight, Sparkles, Flame, Brain, Plus, ClipboardList, Flag } from "lucide-react";
 import { useLocation } from "wouter";
 import {
   useGetHabits,
   useRecordAnswer,
   useUpsertTraitScores,
+  useReportHabit,
 } from "@workspace/api-client-react";
 import type { Habit } from "@workspace/api-client-react";
 
@@ -30,6 +31,7 @@ import {
 const PROFILE_UNLOCK_AT = 20;
 const REVEAL_DURATION = 3000;
 const SESSION_KEY = "ain_session_id";
+const REPORTED_KEY = "ain_reported_habits";
 
 function getOrCreateSessionId(): string {
   let id = localStorage.getItem(SESSION_KEY);
@@ -39,6 +41,29 @@ function getOrCreateSessionId(): string {
   }
   return id;
 }
+
+function getReportedHabits(): Set<number> {
+  try {
+    const raw = localStorage.getItem(REPORTED_KEY);
+    return new Set(raw ? (JSON.parse(raw) as number[]) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function markHabitReported(id: number) {
+  const set = getReportedHabits();
+  set.add(id);
+  localStorage.setItem(REPORTED_KEY, JSON.stringify([...set]));
+}
+
+const REPORT_REASONS = [
+  "Not a habit",
+  "Sexual content",
+  "Drug-related content",
+  "Offensive content",
+  "Spam",
+] as const;
 
 // ── Animated number counter ───────────────────────────────────────────────────
 
@@ -100,6 +125,121 @@ function TraitBar({ pct, color, delay }: { pct: number; color: string; delay: nu
   return (
     <div className="w-full h-2.5 bg-purple-100 rounded-full overflow-hidden">
       <div className={`h-full rounded-full bg-gradient-to-r ${color} transition-none`} style={{ width: `${width}%` }} />
+    </div>
+  );
+}
+
+// ── Report button + reason picker ─────────────────────────────────────────────
+
+function ReportButton({
+  habit,
+  sessionId,
+}: {
+  habit: Habit;
+  sessionId: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [done, setDone] = useState(() => getReportedHabits().has(habit.id));
+  const [selectedReason, setSelectedReason] = useState("");
+
+  const reportHabit = useReportHabit();
+
+  // Reset local state when habit changes
+  useEffect(() => {
+    setOpen(false);
+    setSelectedReason("");
+    setDone(getReportedHabits().has(habit.id));
+  }, [habit.id]);
+
+  const handleSubmit = () => {
+    if (!selectedReason) return;
+    reportHabit.mutate(
+      { id: habit.id, data: { sessionId, reason: selectedReason } },
+      {
+        onSuccess: () => {
+          markHabitReported(habit.id);
+          setDone(true);
+          setOpen(false);
+        },
+        onError: () => {
+          // 409 = already reported (race) — treat as done
+          markHabitReported(habit.id);
+          setDone(true);
+          setOpen(false);
+        },
+      }
+    );
+  };
+
+  if (done) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="flex items-center justify-center gap-1.5 text-white/35 text-xs font-medium py-1"
+      >
+        <Check className="w-3 h-3" /> Reported
+      </motion.div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center">
+      {/* Toggle link */}
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-1 text-white/35 hover:text-white/60 transition-colors text-xs font-medium py-1"
+      >
+        <Flag className="w-3 h-3" />
+        Report this habit
+      </button>
+
+      {/* Reason picker */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.18 }}
+            className="overflow-hidden w-full mt-2"
+          >
+            <div className="bg-white/10 backdrop-blur border border-white/20 rounded-2xl p-4 flex flex-col gap-3">
+              <p className="text-white/60 text-xs font-bold uppercase tracking-wider">Why are you reporting this?</p>
+              <div className="flex flex-wrap gap-2">
+                {REPORT_REASONS.map((reason) => (
+                  <button
+                    key={reason}
+                    onClick={() => setSelectedReason(reason === selectedReason ? "" : reason)}
+                    className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${
+                      selectedReason === reason
+                        ? "bg-white text-purple-900 border-white"
+                        : "bg-white/10 text-white/70 border-white/20 hover:bg-white/20"
+                    }`}
+                  >
+                    {reason}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { setOpen(false); setSelectedReason(""); }}
+                  className="flex-1 py-2 rounded-xl text-xs font-bold text-white/50 hover:text-white/80 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSubmit}
+                  disabled={!selectedReason || reportHabit.isPending}
+                  className="flex-1 py-2 rounded-xl text-xs font-bold bg-white/15 text-white border border-white/20 disabled:opacity-40 hover:bg-white/25 transition-colors"
+                >
+                  {reportHabit.isPending ? "Sending…" : "Submit Report"}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -368,6 +508,9 @@ export default function GameScreen() {
                   <Check className="w-5 h-5" /> Me Too
                 </motion.button>
               </div>
+
+              {/* Report link — sits below action buttons, unobtrusive */}
+              <ReportButton habit={current} sessionId={sessionId} />
             </motion.div>
           )}
 

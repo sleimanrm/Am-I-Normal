@@ -5,17 +5,15 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { HabitTraits } from './habitTraits';
+import type { FlaggedHabitTopReasonsItem } from './flaggedHabitTopReasonsItem';
 
-export interface Habit {
+export interface FlaggedHabit {
   id: number;
   question: string;
   category: string;
-  meTooPct: number;
-  traits: HabitTraits;
   source: string;
   status: string;
-  answerCount: number;
   reportCount: number;
   flagged: boolean;
+  topReasons: FlaggedHabitTopReasonsItem[];
 }

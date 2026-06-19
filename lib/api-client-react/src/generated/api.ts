@@ -22,12 +22,16 @@ import type {
 import type {
   Answer,
   AnswerInput,
+  FlaggedHabit,
+  FlaggedHabitUpdate,
   GetMySubmissionsParams,
   Habit,
   HabitUpdate,
   HealthStatus,
   ListSubmissionsParams,
   MySubmission,
+  ReportInput,
+  ReportResult,
   Submission,
   SubmissionInput,
   SubmissionUpdate,
@@ -581,6 +585,227 @@ export const useUpdateSubmission = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getUpdateSubmissionMutationOptions(options));
+    }
+
+export const getReportHabitUrl = (id: number,) => {
+
+
+
+
+  return `/api/habits/${id}/report`
+}
+
+/**
+ * @summary Report a habit
+ */
+export const reportHabit = async (id: number,
+    reportInput: ReportInput, options?: RequestInit): Promise<ReportResult> => {
+
+  return customFetch<ReportResult>(getReportHabitUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      reportInput,)
+  }
+);}
+
+
+
+
+export const getReportHabitMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportHabit>>, TError,{id: number;data: BodyType<ReportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reportHabit>>, TError,{id: number;data: BodyType<ReportInput>}, TContext> => {
+
+const mutationKey = ['reportHabit'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reportHabit>>, {id: number;data: BodyType<ReportInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  reportHabit(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReportHabitMutationResult = NonNullable<Awaited<ReturnType<typeof reportHabit>>>
+    export type ReportHabitMutationBody = BodyType<ReportInput>
+    export type ReportHabitMutationError = ErrorType<void>
+
+    /**
+ * @summary Report a habit
+ */
+export const useReportHabit = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportHabit>>, TError,{id: number;data: BodyType<ReportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reportHabit>>,
+        TError,
+        {id: number;data: BodyType<ReportInput>},
+        TContext
+      > => {
+      return useMutation(getReportHabitMutationOptions(options));
+    }
+
+export const getGetFlaggedHabitsUrl = () => {
+
+
+
+
+  return `/api/admin/flagged-habits`
+}
+
+/**
+ * @summary List all flagged habits with report breakdown
+ */
+export const getFlaggedHabits = async ( options?: RequestInit): Promise<FlaggedHabit[]> => {
+
+  return customFetch<FlaggedHabit[]>(getGetFlaggedHabitsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFlaggedHabitsQueryKey = () => {
+    return [
+    `/api/admin/flagged-habits`
+    ] as const;
+    }
+
+
+export const getGetFlaggedHabitsQueryOptions = <TData = Awaited<ReturnType<typeof getFlaggedHabits>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFlaggedHabits>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFlaggedHabitsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFlaggedHabits>>> = ({ signal }) => getFlaggedHabits({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFlaggedHabits>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFlaggedHabitsQueryResult = NonNullable<Awaited<ReturnType<typeof getFlaggedHabits>>>
+export type GetFlaggedHabitsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all flagged habits with report breakdown
+ */
+
+export function useGetFlaggedHabits<TData = Awaited<ReturnType<typeof getFlaggedHabits>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFlaggedHabits>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFlaggedHabitsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateFlaggedHabitUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/flagged-habits/${id}`
+}
+
+/**
+ * @summary Dismiss flag or archive a flagged habit
+ */
+export const updateFlaggedHabit = async (id: number,
+    flaggedHabitUpdate: FlaggedHabitUpdate, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getUpdateFlaggedHabitUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      flaggedHabitUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateFlaggedHabitMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFlaggedHabit>>, TError,{id: number;data: BodyType<FlaggedHabitUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateFlaggedHabit>>, TError,{id: number;data: BodyType<FlaggedHabitUpdate>}, TContext> => {
+
+const mutationKey = ['updateFlaggedHabit'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateFlaggedHabit>>, {id: number;data: BodyType<FlaggedHabitUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateFlaggedHabit(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateFlaggedHabitMutationResult = NonNullable<Awaited<ReturnType<typeof updateFlaggedHabit>>>
+    export type UpdateFlaggedHabitMutationBody = BodyType<FlaggedHabitUpdate>
+    export type UpdateFlaggedHabitMutationError = ErrorType<void>
+
+    /**
+ * @summary Dismiss flag or archive a flagged habit
+ */
+export const useUpdateFlaggedHabit = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFlaggedHabit>>, TError,{id: number;data: BodyType<FlaggedHabitUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateFlaggedHabit>>,
+        TError,
+        {id: number;data: BodyType<FlaggedHabitUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateFlaggedHabitMutationOptions(options));
     }
 
 export const getUpdateHabitUrl = (id: number,) => {

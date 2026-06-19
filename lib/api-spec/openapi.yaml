@@ -164,6 +164,75 @@ paths:
         "404":
           description: Not found
 
+  /habits/{id}/report:
+    post:
+      operationId: reportHabit
+      tags: [habits]
+      summary: Report a habit
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportInput"
+      responses:
+        "200":
+          description: Report recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportResult"
+        "400":
+          description: Invalid input
+        "404":
+          description: Habit not found
+        "409":
+          description: Already reported
+
+  /admin/flagged-habits:
+    get:
+      operationId: getFlaggedHabits
+      tags: [admin]
+      summary: List all flagged habits with report breakdown
+      responses:
+        "200":
+          description: List of flagged habits
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FlaggedHabit"
+
+  /admin/flagged-habits/{id}:
+    patch:
+      operationId: updateFlaggedHabit
+      tags: [admin]
+      summary: Dismiss flag or archive a flagged habit
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FlaggedHabitUpdate"
+      responses:
+        "200":
+          description: Updated
+        "404":
+          description: Not found
+
   /admin/habits/{id}:
     patch:
       operationId: updateHabit
@@ -248,7 +317,7 @@ components:
 
     Habit:
       type: object
-      required: [id, question, category, meTooPct, traits, source, status, answerCount]
+      required: [id, question, category, meTooPct, traits, source, status, answerCount, reportCount, flagged]
       properties:
         id:
           type: integer
@@ -268,6 +337,66 @@ components:
           type: string
         answerCount:
           type: integer
+        reportCount:
+          type: integer
+        flagged:
+          type: boolean
+
+    ReportInput:
+      type: object
+      required: [sessionId, reason]
+      properties:
+        sessionId:
+          type: string
+        reason:
+          type: string
+
+    ReportResult:
+      type: object
+      required: [reported, flagged, reportCount]
+      properties:
+        reported:
+          type: boolean
+        flagged:
+          type: boolean
+        reportCount:
+          type: integer
+
+    FlaggedHabit:
+      type: object
+      required: [id, question, category, source, status, reportCount, flagged, topReasons]
+      properties:
+        id:
+          type: integer
+        question:
+          type: string
+        category:
+          type: string
+        source:
+          type: string
+        status:
+          type: string
+        reportCount:
+          type: integer
+        flagged:
+          type: boolean
+        topReasons:
+          type: array
+          items:
+            type: object
+            required: [reason, count]
+            properties:
+              reason:
+                type: string
+              count:
+                type: integer
+
+    FlaggedHabitUpdate:
+      type: object
+      properties:
+        action:
+          type: string
+          description: "dismiss | archive"
 
     HabitUpdate:
       type: object

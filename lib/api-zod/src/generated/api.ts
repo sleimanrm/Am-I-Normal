@@ -27,7 +27,9 @@ export const GetHabitsResponseItem = zod.object({
   "traits": zod.record(zod.string(), zod.number()),
   "source": zod.string(),
   "status": zod.string(),
-  "answerCount": zod.number()
+  "answerCount": zod.number(),
+  "reportCount": zod.number(),
+  "flagged": zod.boolean()
 })
 export const GetHabitsResponse = zod.array(GetHabitsResponseItem)
 
@@ -117,6 +119,56 @@ export const UpdateSubmissionResponse = zod.object({
 
 
 /**
+ * @summary Report a habit
+ */
+export const ReportHabitParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ReportHabitBody = zod.object({
+  "sessionId": zod.string(),
+  "reason": zod.string()
+})
+
+export const ReportHabitResponse = zod.object({
+  "reported": zod.boolean(),
+  "flagged": zod.boolean(),
+  "reportCount": zod.number()
+})
+
+
+/**
+ * @summary List all flagged habits with report breakdown
+ */
+export const GetFlaggedHabitsResponseItem = zod.object({
+  "id": zod.number(),
+  "question": zod.string(),
+  "category": zod.string(),
+  "source": zod.string(),
+  "status": zod.string(),
+  "reportCount": zod.number(),
+  "flagged": zod.boolean(),
+  "topReasons": zod.array(zod.object({
+  "reason": zod.string(),
+  "count": zod.number()
+}))
+})
+export const GetFlaggedHabitsResponse = zod.array(GetFlaggedHabitsResponseItem)
+
+
+/**
+ * @summary Dismiss flag or archive a flagged habit
+ */
+export const UpdateFlaggedHabitParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateFlaggedHabitBody = zod.object({
+  "action": zod.string().optional().describe('dismiss | archive')
+})
+
+
+/**
  * @summary Edit a habit (admin)
  */
 export const UpdateHabitParams = zod.object({
@@ -137,7 +189,9 @@ export const UpdateHabitResponse = zod.object({
   "traits": zod.record(zod.string(), zod.number()),
   "source": zod.string(),
   "status": zod.string(),
-  "answerCount": zod.number()
+  "answerCount": zod.number(),
+  "reportCount": zod.number(),
+  "flagged": zod.boolean()
 })
 
 

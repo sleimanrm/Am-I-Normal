@@ -20,6 +20,40 @@ export interface Habit {
   source: string;
   status: string;
   answerCount: number;
+  reportCount: number;
+  flagged: boolean;
+}
+
+export interface ReportInput {
+  sessionId: string;
+  reason: string;
+}
+
+export interface ReportResult {
+  reported: boolean;
+  flagged: boolean;
+  reportCount: number;
+}
+
+export type FlaggedHabitTopReasonsItem = {
+  reason: string;
+  count: number;
+};
+
+export interface FlaggedHabit {
+  id: number;
+  question: string;
+  category: string;
+  source: string;
+  status: string;
+  reportCount: number;
+  flagged: boolean;
+  topReasons: FlaggedHabitTopReasonsItem[];
+}
+
+export interface FlaggedHabitUpdate {
+  /** dismiss | archive */
+  action?: string;
 }
 
 export interface HabitUpdate {

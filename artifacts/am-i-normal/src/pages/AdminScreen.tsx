@@ -2,14 +2,17 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Check, X, Clock, ShieldCheck, Pencil, Save, ChevronDown, ChevronUp,
-  BookOpen, AlertCircle,
+  BookOpen, AlertCircle, Flag, Trash2, CheckCircle2,
 } from "lucide-react";
 import {
   useListSubmissions,
   useUpdateSubmission,
   getListSubmissionsQueryKey,
+  useGetFlaggedHabits,
+  getGetFlaggedHabitsQueryKey,
+  useUpdateFlaggedHabit,
 } from "@workspace/api-client-react";
-import type { Submission } from "@workspace/api-client-react";
+import type { Submission, FlaggedHabit } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -57,11 +60,7 @@ function GuidelinesPanel() {
           <BookOpen className="w-4 h-4 text-violet-300" />
           <span className="text-white font-bold text-sm">Moderation Guidelines</span>
         </div>
-        {open ? (
-          <ChevronUp className="w-4 h-4 text-white/50" />
-        ) : (
-          <ChevronDown className="w-4 h-4 text-white/50" />
-        )}
+        {open ? <ChevronUp className="w-4 h-4 text-white/50" /> : <ChevronDown className="w-4 h-4 text-white/50" />}
       </button>
 
       <AnimatePresence initial={false}>
@@ -75,7 +74,7 @@ function GuidelinesPanel() {
           >
             <div className="px-4 pb-4 space-y-3 border-t border-white/10 pt-3">
               <p className="text-white/60 text-xs leading-relaxed">
-                A valid habit must satisfy <strong className="text-white/80">all four</strong> of the following criteria:
+                A valid habit must satisfy <strong className="text-white/80">all four</strong> criteria:
               </p>
               <div className="grid grid-cols-2 gap-2">
                 {GUIDELINES.map(({ icon, label, desc }) => (
@@ -135,24 +134,18 @@ function SubmissionCard({
     setSelectedReason("");
   };
 
-  const handleApprove = () => {
-    reset();
-    onAction(submission.id, { status: "approved" });
-  };
-
+  const handleApprove = () => { reset(); onAction(submission.id, { status: "approved" }); };
   const handleReject = () => {
     if (!selectedReason) return;
     onAction(submission.id, { status: "rejected", moderationReason: selectedReason });
     reset();
   };
-
   const handleSave = () => {
     const trimmed = editText.trim();
     if (!trimmed || trimmed === submission.question) { reset(); return; }
     onAction(submission.id, { question: trimmed });
     reset();
   };
-
   const handleSaveAndApprove = () => {
     const trimmed = editText.trim();
     onAction(submission.id, { status: "approved", question: trimmed || undefined });
@@ -160,24 +153,16 @@ function SubmissionCard({
   };
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95 }}
+    <motion.div layout
+      initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.25 }}
       className="bg-white rounded-2xl overflow-hidden shadow-sm border border-purple-100"
     >
-      {/* ── Main content ── */}
       <div className="p-5">
         {mode === "edit" ? (
-          <textarea
-            value={editText}
-            onChange={(e) => setEditText(e.target.value)}
-            maxLength={280}
-            rows={3}
-            className="w-full resize-none rounded-xl border border-purple-200 bg-purple-50 p-3 text-gray-800 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-purple-300 mb-3"
-          />
+          <textarea value={editText} onChange={(e) => setEditText(e.target.value)}
+            maxLength={280} rows={3}
+            className="w-full resize-none rounded-xl border border-purple-200 bg-purple-50 p-3 text-gray-800 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-purple-300 mb-3" />
         ) : (
           <p className="text-gray-800 font-medium text-base leading-snug mb-3">{submission.question}</p>
         )}
@@ -203,7 +188,6 @@ function SubmissionCard({
           </div>
         </div>
 
-        {/* Moderation reason badge */}
         {statusIs("rejected") && submission.moderationReason && (
           <div className="mt-2.5 flex items-center gap-1.5">
             <AlertCircle className="w-3.5 h-3.5 text-red-400 shrink-0" />
@@ -212,22 +196,17 @@ function SubmissionCard({
         )}
       </div>
 
-      {/* ── Reject: reason picker ── */}
       <AnimatePresence>
         {mode === "reject" && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.18 }}
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.18 }}
             className="overflow-hidden border-t border-red-100 bg-red-50/60"
           >
             <div className="p-4 space-y-3">
               <p className="text-red-700 font-bold text-xs uppercase tracking-wider">Select a reason</p>
               <div className="flex flex-wrap gap-2">
                 {REJECTION_REASONS.map((reason) => (
-                  <button
-                    key={reason}
+                  <button key={reason}
                     onClick={() => setSelectedReason(reason === selectedReason ? "" : reason)}
                     className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${
                       selectedReason === reason
@@ -240,17 +219,12 @@ function SubmissionCard({
                 ))}
               </div>
               <div className="flex gap-2 pt-1">
-                <button
-                  onClick={reset}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-white border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors"
-                >
+                <button onClick={reset}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-white border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">
                   Cancel
                 </button>
-                <button
-                  onClick={handleReject}
-                  disabled={!selectedReason || isMutating}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-red-600 text-white disabled:opacity-40 hover:bg-red-700 transition-colors flex items-center justify-center gap-1.5"
-                >
+                <button onClick={handleReject} disabled={!selectedReason || isMutating}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-red-600 text-white disabled:opacity-40 hover:bg-red-700 transition-colors flex items-center justify-center gap-1.5">
                   <X className="w-4 h-4" /> Confirm Rejection
                 </button>
               </div>
@@ -259,62 +233,40 @@ function SubmissionCard({
         )}
       </AnimatePresence>
 
-      {/* ── Action buttons ── */}
       {mode !== "reject" && (
         <div className="px-5 pb-4 flex gap-2">
           {mode === "edit" ? (
             <>
-              <button
-                onClick={reset}
-                className="py-2.5 px-4 rounded-xl text-sm font-bold bg-gray-50 border border-gray-200 text-gray-500 hover:bg-gray-100 transition-colors"
-              >
+              <button onClick={reset}
+                className="py-2.5 px-4 rounded-xl text-sm font-bold bg-gray-50 border border-gray-200 text-gray-500 hover:bg-gray-100 transition-colors">
                 Cancel
               </button>
               {statusIs("pending") && (
-                <button
-                  onClick={handleSaveAndApprove}
-                  disabled={isMutating}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-bold bg-green-50 border border-green-200 text-green-700 hover:bg-green-100 transition-colors disabled:opacity-50"
-                >
+                <button onClick={handleSaveAndApprove} disabled={isMutating}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-bold bg-green-50 border border-green-200 text-green-700 hover:bg-green-100 transition-colors disabled:opacity-50">
                   <Save className="w-3.5 h-3.5" /> Save & Approve
                 </button>
               )}
-              <button
-                onClick={handleSave}
-                disabled={isMutating}
-                className={`${statusIs("pending") ? "" : "flex-1"} flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl text-sm font-bold bg-purple-50 border border-purple-200 text-purple-700 hover:bg-purple-100 transition-colors disabled:opacity-50`}
-              >
+              <button onClick={handleSave} disabled={isMutating}
+                className={`${statusIs("pending") ? "" : "flex-1"} flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl text-sm font-bold bg-purple-50 border border-purple-200 text-purple-700 hover:bg-purple-100 transition-colors disabled:opacity-50`}>
                 <Save className="w-3.5 h-3.5" /> Save
               </button>
             </>
           ) : (
             <>
-              {/* Edit — always available */}
-              <button
-                onClick={() => setMode("edit")}
-                className="flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl text-sm font-bold bg-purple-50 border border-purple-200 text-purple-700 hover:bg-purple-100 transition-colors"
-              >
+              <button onClick={() => setMode("edit")}
+                className="flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl text-sm font-bold bg-purple-50 border border-purple-200 text-purple-700 hover:bg-purple-100 transition-colors">
                 <Pencil className="w-3.5 h-3.5" /> Edit
               </button>
-
-              {/* Reject — available for pending + approved */}
               {!statusIs("rejected") && (
-                <button
-                  onClick={() => setMode("reject")}
-                  disabled={isMutating}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-bold bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 transition-colors disabled:opacity-50"
-                >
+                <button onClick={() => setMode("reject")} disabled={isMutating}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-bold bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 transition-colors disabled:opacity-50">
                   <X className="w-4 h-4" /> Reject
                 </button>
               )}
-
-              {/* Approve — available for pending + rejected */}
               {!statusIs("approved") && (
-                <button
-                  onClick={handleApprove}
-                  disabled={isMutating}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-bold bg-green-50 border border-green-200 text-green-700 hover:bg-green-100 transition-colors disabled:opacity-50"
-                >
+                <button onClick={handleApprove} disabled={isMutating}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-bold bg-green-50 border border-green-200 text-green-700 hover:bg-green-100 transition-colors disabled:opacity-50">
                   <Check className="w-4 h-4" /> Approve
                 </button>
               )}
@@ -326,15 +278,83 @@ function SubmissionCard({
   );
 }
 
+// ── Flagged habit card ────────────────────────────────────────────────────────
+
+function FlaggedHabitCard({
+  habit,
+  onAction,
+  isPending,
+}: {
+  habit: FlaggedHabit;
+  onAction: (id: number, action: "dismiss" | "archive") => void;
+  isPending: boolean;
+}) {
+  return (
+    <motion.div layout
+      initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.25 }}
+      className="bg-white rounded-2xl overflow-hidden shadow-sm border border-red-100"
+    >
+      <div className="p-5">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <p className="text-gray-800 font-medium text-base leading-snug flex-1">{habit.question}</p>
+          <span className="flex items-center gap-1 text-red-600 bg-red-50 border border-red-200 text-xs font-bold px-2.5 py-1 rounded-full shrink-0">
+            <Flag className="w-3 h-3" /> {habit.reportCount} report{habit.reportCount !== 1 ? "s" : ""}
+          </span>
+        </div>
+
+        {/* Report reasons breakdown */}
+        {habit.topReasons.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {habit.topReasons.map(({ reason, count }) => (
+              <span key={reason}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-red-700 bg-red-50 border border-red-100 px-2.5 py-1 rounded-full">
+                {reason}
+                <span className="bg-red-200 text-red-800 rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-bold">{count}</span>
+              </span>
+            ))}
+          </div>
+        )}
+
+        <div className="flex items-center gap-2 text-gray-400 text-xs">
+          <span className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium">{habit.category}</span>
+          <span className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium">{habit.source}</span>
+        </div>
+      </div>
+
+      <div className="px-5 pb-4 flex gap-2 border-t border-gray-100 pt-3">
+        <button
+          onClick={() => onAction(habit.id, "dismiss")}
+          disabled={isPending}
+          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-bold bg-green-50 border border-green-200 text-green-700 hover:bg-green-100 transition-colors disabled:opacity-50"
+        >
+          <CheckCircle2 className="w-4 h-4" /> Dismiss Flag
+        </button>
+        <button
+          onClick={() => onAction(habit.id, "archive")}
+          disabled={isPending}
+          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-bold bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 transition-colors disabled:opacity-50"
+        >
+          <Trash2 className="w-4 h-4" /> Archive
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
 // ── Main screen ───────────────────────────────────────────────────────────────
 
+type MainTab = "submissions" | "flagged";
 type FilterTab = "pending" | "approved" | "rejected";
 
 export default function AdminScreen() {
-  const [activeTab, setActiveTab] = useState<FilterTab>("pending");
+  const [mainTab, setMainTab] = useState<MainTab>("submissions");
+  const [activeFilter, setActiveFilter] = useState<FilterTab>("pending");
   const queryClient = useQueryClient();
 
-  const { data: submissions = [], isLoading } = useListSubmissions();
+  // ── Submissions ──────────────────────────────────────────────────────────
+  const { data: submissions = [], isLoading: subsLoading } = useListSubmissions();
 
   const updateSubmission = useUpdateSubmission({
     mutation: {
@@ -352,92 +372,180 @@ export default function AdminScreen() {
   const approved = submissions.filter((s) => s.status === "approved");
   const rejected = submissions.filter((s) => s.status === "rejected");
 
-  const tabs: { key: FilterTab; label: string; count: number }[] = [
+  const filterTabs: { key: FilterTab; label: string; count: number }[] = [
     { key: "pending", label: "Pending", count: pending.length },
     { key: "approved", label: "Approved", count: approved.length },
     { key: "rejected", label: "Rejected", count: rejected.length },
   ];
 
-  const visibleList =
-    activeTab === "pending" ? pending : activeTab === "approved" ? approved : rejected;
+  const visibleSubmissions =
+    activeFilter === "pending" ? pending : activeFilter === "approved" ? approved : rejected;
+
+  // ── Flagged habits ───────────────────────────────────────────────────────
+  const { data: flaggedHabits = [], isLoading: flaggedLoading } = useGetFlaggedHabits();
+
+  const updateFlagged = useUpdateFlaggedHabit({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetFlaggedHabitsQueryKey() });
+      },
+    },
+  });
+
+  const handleFlaggedAction = (id: number, action: "dismiss" | "archive") => {
+    updateFlagged.mutate({ id, data: { action } });
+  };
 
   return (
     <div className="min-h-[100dvh] w-full bg-gradient-to-br from-[#7C3AED] to-[#4C1D95] p-4 pb-12">
       <div className="w-full max-w-[500px] mx-auto">
 
-        {/* Header */}
+        {/* ── Header ── */}
         <div className="flex items-center gap-3 py-6">
           <div className="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center">
             <ShieldCheck className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-white font-extrabold text-xl leading-none">Submissions Admin</h1>
-            <p className="text-white/50 text-xs mt-0.5">{submissions.length} total submissions</p>
+            <h1 className="text-white font-extrabold text-xl leading-none">Admin Dashboard</h1>
+            <p className="text-white/50 text-xs mt-0.5">
+              {submissions.length} submissions · {flaggedHabits.length} flagged
+            </p>
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-3 mb-5">
+        {/* ── Stats row ── */}
+        <div className="grid grid-cols-4 gap-2 mb-5">
           {[
             { label: "Pending", value: pending.length, color: "bg-amber-400" },
             { label: "Approved", value: approved.length, color: "bg-green-400" },
             { label: "Rejected", value: rejected.length, color: "bg-red-400" },
+            { label: "Flagged", value: flaggedHabits.length, color: "bg-orange-400" },
           ].map(({ label, value, color }) => (
-            <div key={label} className="bg-white/10 rounded-2xl p-4 text-center backdrop-blur border border-white/15">
-              <div className={`w-2 h-2 rounded-full ${color} mx-auto mb-2`} />
-              <p className="text-white font-extrabold text-2xl leading-none">{value}</p>
-              <p className="text-white/50 text-xs mt-1">{label}</p>
+            <div key={label} className="bg-white/10 rounded-2xl p-3 text-center backdrop-blur border border-white/15">
+              <div className={`w-2 h-2 rounded-full ${color} mx-auto mb-1.5`} />
+              <p className="text-white font-extrabold text-xl leading-none">{value}</p>
+              <p className="text-white/50 text-[10px] mt-1">{label}</p>
             </div>
           ))}
         </div>
 
-        {/* Guidelines */}
-        <GuidelinesPanel />
-
-        {/* Filter tabs */}
+        {/* ── Main tabs ── */}
         <div className="flex bg-white/10 rounded-2xl p-1 mb-5 gap-1">
-          {tabs.map(({ key, label, count }) => (
-            <button
-              key={key}
-              onClick={() => setActiveTab(key)}
-              className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${
-                activeTab === key
-                  ? "bg-white text-purple-900 shadow-sm"
-                  : "text-white/60 hover:text-white"
-              }`}
-            >
-              {label}{count > 0 && <span className="opacity-60"> ({count})</span>}
-            </button>
-          ))}
+          <button
+            onClick={() => setMainTab("submissions")}
+            className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${
+              mainTab === "submissions" ? "bg-white text-purple-900 shadow-sm" : "text-white/60 hover:text-white"
+            }`}
+          >
+            Submissions
+            {pending.length > 0 && (
+              <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${mainTab === "submissions" ? "bg-amber-100 text-amber-700" : "bg-white/20 text-white"}`}>
+                {pending.length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setMainTab("flagged")}
+            className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${
+              mainTab === "flagged" ? "bg-white text-purple-900 shadow-sm" : "text-white/60 hover:text-white"
+            }`}
+          >
+            <Flag className="w-3.5 h-3.5" />
+            Flagged Habits
+            {flaggedHabits.length > 0 && (
+              <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${mainTab === "flagged" ? "bg-red-100 text-red-700" : "bg-white/20 text-white"}`}>
+                {flaggedHabits.length}
+              </span>
+            )}
+          </button>
         </div>
 
-        {/* Submission list */}
         <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="flex flex-col gap-3"
-          >
-            {isLoading ? (
-              <div className="text-center py-16 text-white/40 font-medium">Loading…</div>
-            ) : visibleList.length === 0 ? (
-              <div className="text-center py-16 text-white/40 font-medium">Nothing here yet.</div>
-            ) : (
-              <AnimatePresence>
-                {visibleList.map((s) => (
-                  <SubmissionCard
-                    key={s.id}
-                    submission={s}
-                    onAction={handleAction}
-                    isPending={updateSubmission.isPending}
-                  />
+
+          {/* ─────────────────── SUBMISSIONS TAB ─────────────────────────── */}
+          {mainTab === "submissions" && (
+            <motion.div key="submissions"
+              initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }} transition={{ duration: 0.18 }}
+            >
+              <GuidelinesPanel />
+
+              {/* Filter tabs */}
+              <div className="flex bg-white/10 rounded-2xl p-1 mb-5 gap-1">
+                {filterTabs.map(({ key, label, count }) => (
+                  <button key={key} onClick={() => setActiveFilter(key)}
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                      activeFilter === key ? "bg-white text-purple-900 shadow-sm" : "text-white/60 hover:text-white"
+                    }`}
+                  >
+                    {label}{count > 0 && <span className="opacity-60"> ({count})</span>}
+                  </button>
                 ))}
+              </div>
+
+              <AnimatePresence mode="wait">
+                <motion.div key={activeFilter}
+                  initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }} transition={{ duration: 0.18 }}
+                  className="flex flex-col gap-3"
+                >
+                  {subsLoading ? (
+                    <div className="text-center py-16 text-white/40 font-medium">Loading…</div>
+                  ) : visibleSubmissions.length === 0 ? (
+                    <div className="text-center py-16 text-white/40 font-medium">Nothing here yet.</div>
+                  ) : (
+                    <AnimatePresence>
+                      {visibleSubmissions.map((s) => (
+                        <SubmissionCard key={s.id} submission={s} onAction={handleAction}
+                          isPending={updateSubmission.isPending} />
+                      ))}
+                    </AnimatePresence>
+                  )}
+                </motion.div>
               </AnimatePresence>
-            )}
-          </motion.div>
+            </motion.div>
+          )}
+
+          {/* ─────────────────── FLAGGED HABITS TAB ──────────────────────── */}
+          {mainTab === "flagged" && (
+            <motion.div key="flagged"
+              initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }} transition={{ duration: 0.18 }}
+              className="flex flex-col gap-3"
+            >
+              {/* Info strip */}
+              <div className="bg-orange-500/15 border border-orange-400/25 rounded-2xl px-4 py-3 flex items-start gap-2.5 mb-2">
+                <Flag className="w-4 h-4 text-orange-300 mt-0.5 shrink-0" />
+                <p className="text-orange-100 text-xs leading-relaxed">
+                  Habits flagged by <strong className="text-white">3 or more</strong> users appear here.
+                  Dismiss to clear the flag, or Archive to remove from the feed.
+                </p>
+              </div>
+
+              {flaggedLoading ? (
+                <div className="text-center py-16 text-white/40 font-medium">Loading…</div>
+              ) : flaggedHabits.length === 0 ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                  className="text-center py-16 flex flex-col items-center gap-3"
+                >
+                  <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
+                    <CheckCircle2 className="w-6 h-6 text-green-300" />
+                  </div>
+                  <p className="text-white/60 font-medium">No flagged habits right now.</p>
+                  <p className="text-white/35 text-sm">Habits flagged by 3+ users will appear here.</p>
+                </motion.div>
+              ) : (
+                <AnimatePresence>
+                  {flaggedHabits.map((h) => (
+                    <FlaggedHabitCard key={h.id} habit={h} onAction={handleFlaggedAction}
+                      isPending={updateFlagged.isPending} />
+                  ))}
+                </AnimatePresence>
+              )}
+            </motion.div>
+          )}
+
         </AnimatePresence>
       </div>
     </div>

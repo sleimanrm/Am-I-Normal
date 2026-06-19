@@ -8,6 +8,9 @@
 
 export * from './answer';
 export * from './answerInput';
+export * from './flaggedHabit';
+export * from './flaggedHabitTopReasonsItem';
+export * from './flaggedHabitUpdate';
 export * from './getMySubmissionsParams';
 export * from './habit';
 export * from './habitTraits';
@@ -15,6 +18,8 @@ export * from './habitUpdate';
 export * from './healthStatus';
 export * from './listSubmissionsParams';
 export * from './mySubmission';
+export * from './reportInput';
+export * from './reportResult';
 export * from './submission';
 export * from './submissionInput';
 export * from './submissionUpdate';
