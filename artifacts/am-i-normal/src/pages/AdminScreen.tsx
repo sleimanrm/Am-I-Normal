@@ -105,11 +105,17 @@ function GuidelinesPanel() {
 
 // ── Submission card ───────────────────────────────────────────────────────────
 
-type CardMode = "view" | "edit" | "reject";
+type CardMode = "view" | "edit" | "reject" | "approve";
+
+const ALL_CATEGORIES = [
+  "Overthinking", "Pets", "Food", "Sleep",
+  "Technology", "Social", "Body", "Habits", "Community",
+] as const;
 
 interface ActionPayload {
   status?: string;
   question?: string;
+  category?: string;
   moderationReason?: string | null;
 }
 
@@ -125,6 +131,8 @@ function SubmissionCard({
   const [mode, setMode] = useState<CardMode>("view");
   const [editText, setEditText] = useState(submission.question);
   const [selectedReason, setSelectedReason] = useState<string>("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("Community");
+  const [pendingApproveQuestion, setPendingApproveQuestion] = useState<string | undefined>(undefined);
 
   const statusIs = (s: string) => submission.status === s;
 
@@ -132,9 +140,14 @@ function SubmissionCard({
     setMode("view");
     setEditText(submission.question);
     setSelectedReason("");
+    setSelectedCategory("Community");
+    setPendingApproveQuestion(undefined);
   };
 
-  const handleApprove = () => { reset(); onAction(submission.id, { status: "approved" }); };
+  const handleApprove = () => {
+    setPendingApproveQuestion(undefined);
+    setMode("approve");
+  };
   const handleReject = () => {
     if (!selectedReason) return;
     onAction(submission.id, { status: "rejected", moderationReason: selectedReason });
@@ -148,7 +161,15 @@ function SubmissionCard({
   };
   const handleSaveAndApprove = () => {
     const trimmed = editText.trim();
-    onAction(submission.id, { status: "approved", question: trimmed || undefined });
+    setPendingApproveQuestion(trimmed || undefined);
+    setMode("approve");
+  };
+  const confirmApprove = () => {
+    onAction(submission.id, {
+      status: "approved",
+      category: selectedCategory,
+      ...(pendingApproveQuestion ? { question: pendingApproveQuestion } : {}),
+    });
     reset();
   };
 
@@ -231,9 +252,44 @@ function SubmissionCard({
             </div>
           </motion.div>
         )}
+
+        {mode === "approve" && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.18 }}
+            className="overflow-hidden border-t border-green-100 bg-green-50/60"
+          >
+            <div className="p-4 space-y-3">
+              <p className="text-green-700 font-bold text-xs uppercase tracking-wider">Assign a category</p>
+              <div className="flex flex-wrap gap-2">
+                {ALL_CATEGORIES.map((cat) => (
+                  <button key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${
+                      selectedCategory === cat
+                        ? "bg-green-600 text-white border-green-600"
+                        : "bg-white text-green-700 border-green-200 hover:border-green-400"
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-2 pt-1">
+                <button onClick={reset}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-white border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">
+                  Cancel
+                </button>
+                <button onClick={confirmApprove} disabled={isMutating}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-green-600 text-white disabled:opacity-40 hover:bg-green-700 transition-colors flex items-center justify-center gap-1.5">
+                  <Check className="w-4 h-4" /> Confirm Approval
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
       </AnimatePresence>
 
-      {mode !== "reject" && (
+      {mode !== "reject" && mode !== "approve" && (
         <div className="px-5 pb-4 flex gap-2">
           {mode === "edit" ? (
             <>

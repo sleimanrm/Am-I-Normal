@@ -178,6 +178,7 @@ export const UpdateSubmissionParams = zod.object({
 export const UpdateSubmissionBody = zod.object({
   "status": zod.string().optional(),
   "question": zod.string().optional(),
+  "category": zod.string().optional(),
   "moderationReason": zod.string().nullish()
 })
 

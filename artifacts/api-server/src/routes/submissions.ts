@@ -159,11 +159,12 @@ router.patch("/admin/submissions/:id", async (req, res): Promise<void> => {
   // Approving → create habit if not already approved, clear moderation reason
   if (body.data.status === "approved" && existing.status !== "approved") {
     const question = body.data.question?.trim() ?? existing.question;
+    const category = body.data.category?.trim() || "Community";
     const [habit] = await db
       .insert(habitsTable)
       .values({
         question,
-        category: "Community",
+        category,
         meTooPctDefault: 50,
         traits: {},
         source: "community",

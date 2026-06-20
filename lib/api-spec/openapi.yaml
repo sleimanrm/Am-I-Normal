@@ -575,6 +575,8 @@ components:
           type: string
         question:
           type: string
+        category:
+          type: string
         moderationReason:
           type: ["string", "null"]
 
