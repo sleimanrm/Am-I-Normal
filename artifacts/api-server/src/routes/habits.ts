@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db, habitsTable, answersTable, reportsTable } from "@workspace/db";
 import { eq, sql, count, desc, and } from "drizzle-orm";
+import { optionalAuth } from "../middlewares/auth";
 import {
   GetHabitsResponse,
   GetTrendingQueryParams,
@@ -23,7 +24,7 @@ import {
 
 const router: IRouter = Router();
 
-const FLAG_THRESHOLD = 3;
+const FLAG_THRESHOLD = 1;
 
 // ── Habit list ────────────────────────────────────────────────────────────────
 
@@ -212,7 +213,7 @@ router.get("/habits/by-category", async (req, res): Promise<void> => {
 
 // ── Report a habit ────────────────────────────────────────────────────────────
 
-router.post("/habits/:id/report", async (req, res): Promise<void> => {
+router.post("/habits/:id/report", optionalAuth, async (req, res): Promise<void> => {
   const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const params = ReportHabitParams.safeParse({ id: parseInt(rawId, 10) });
   if (!params.success) {
@@ -236,20 +237,41 @@ router.post("/habits/:id/report", async (req, res): Promise<void> => {
     return;
   }
 
-  // Insert report — unique constraint prevents duplicate per session+habit
+  const reporterId = req.user?.userId ?? null;
+
+  // If logged in, check for duplicate by userId+habitId (unique constraint only covers sessionId)
+  if (reporterId !== null) {
+    const [existing] = await db
+      .select({ id: reportsTable.id })
+      .from(reportsTable)
+      .where(
+        and(
+          eq(reportsTable.habitId, params.data.id),
+          eq(reportsTable.userId, reporterId),
+        )
+      )
+      .limit(1);
+    if (existing) {
+      res.status(409).json({ error: "Already reported" });
+      return;
+    }
+  }
+
+  // Insert report — unique constraint on (habitId, sessionId) catches anonymous duplicates
   try {
     await db.insert(reportsTable).values({
       habitId: params.data.id,
+      userId: reporterId,
       sessionId: body.data.sessionId,
       reason: body.data.reason,
     });
   } catch {
-    // Unique constraint violation — already reported
+    // Unique constraint violation on sessionId — already reported anonymously
     res.status(409).json({ error: "Already reported" });
     return;
   }
 
-  // Increment count on the habit and flag if threshold reached
+  // Increment count; flag immediately on first report (FLAG_THRESHOLD = 1)
   const newCount = habit.reportCount + 1;
   const nowFlagged = newCount >= FLAG_THRESHOLD;
 
