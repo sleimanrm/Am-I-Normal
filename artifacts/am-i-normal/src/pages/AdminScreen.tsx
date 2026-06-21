@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Check, X, Clock, ShieldCheck, Pencil, Save, ChevronDown, ChevronUp,
   BookOpen, AlertCircle, Flag, Trash2, CheckCircle2, Lock, Delete,
-  LayoutList,
+  LayoutList, BarChart2,
 } from "lucide-react";
 import {
   useListSubmissions,
@@ -19,7 +19,20 @@ import {
   useUpdateHabit,
 } from "@workspace/api-client-react";
 import type { Submission, FlaggedHabit, AdminHabit } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
+
+// ── Analytics types ────────────────────────────────────────────────────────────
+
+interface AdminAnalytics {
+  totalUsers: number;
+  dailyActiveUsers: number;
+  totalHabits: number;
+  habitsToday: number;
+  votesToday: number;
+  reportsToday: number;
+  topCategories: { category: string; count: number }[];
+  mostVotedHabits: { id: number; question: string; answerCount: number; meTooPct: number }[];
+}
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -647,7 +660,7 @@ function FlaggedHabitCard({
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 
-type MainTab = "submissions" | "habits" | "flagged";
+type MainTab = "submissions" | "habits" | "flagged" | "analytics";
 type FilterTab = "pending" | "approved" | "rejected";
 type HabitFilter = "all" | "curated" | "community";
 
@@ -716,6 +729,21 @@ function AdminDashboard({ onLock }: { onLock: () => void }) {
   const activeHabits = allHabits.filter((h) => h.status === "active");
   const archivedHabits = allHabits.filter((h) => h.status === "archived");
 
+  // ── Analytics ────────────────────────────────────────────────────────────
+  const { data: analytics, isLoading: analyticsLoading } = useQuery<AdminAnalytics>({
+    queryKey: ["admin-analytics"],
+    queryFn: async () => {
+      const token = sessionStorage.getItem(SESSION_KEY) ?? "";
+      const res = await fetch("/api/admin/analytics", {
+        headers: { "X-Admin-Token": token },
+      });
+      if (!res.ok) throw new Error("Failed to fetch analytics");
+      return res.json() as Promise<AdminAnalytics>;
+    },
+    staleTime: 60_000,
+    enabled: mainTab === "analytics",
+  });
+
   // ── Flagged habits ───────────────────────────────────────────────────────
   const { data: flaggedHabits = [], isLoading: flaggedLoading } = useGetFlaggedHabits();
 
@@ -769,9 +797,10 @@ function AdminDashboard({ onLock }: { onLock: () => void }) {
         {/* ── Main tabs ── */}
         <div className="flex bg-white/10 rounded-2xl p-1 mb-5 gap-1">
           {([
-            { key: "submissions" as MainTab, label: "Submissions", badge: pending.length },
+            { key: "submissions" as MainTab, label: "Subs", badge: pending.length },
             { key: "habits" as MainTab, label: "Habits", badge: 0 },
             { key: "flagged" as MainTab, label: "Flagged", badge: flaggedHabits.length },
+            { key: "analytics" as MainTab, label: "Stats", badge: 0 },
           ]).map(({ key, label, badge }) => (
             <button key={key}
               onClick={() => setMainTab(key)}
@@ -907,6 +936,98 @@ function AdminDashboard({ onLock }: { onLock: () => void }) {
                     />
                   ))}
                 </AnimatePresence>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── Analytics tab ── */}
+        {mainTab === "analytics" && (
+          <>
+            {analyticsLoading ? (
+              <div className="flex items-center justify-center h-32">
+                <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              </div>
+            ) : !analytics ? (
+              <div className="text-center py-16 text-white/40">
+                <BarChart2 className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                <p className="font-semibold">Failed to load analytics</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+
+                {/* ── Metric cards ── */}
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { label: "Total Users", value: analytics.totalUsers, color: "text-violet-300", dot: "bg-violet-400" },
+                    { label: "Active Today", value: analytics.dailyActiveUsers, color: "text-sky-300", dot: "bg-sky-400" },
+                    { label: "Total Habits", value: analytics.totalHabits, color: "text-emerald-300", dot: "bg-emerald-400" },
+                    { label: "Habits Today", value: analytics.habitsToday, color: "text-teal-300", dot: "bg-teal-400" },
+                    { label: "Votes Today", value: analytics.votesToday, color: "text-amber-300", dot: "bg-amber-400" },
+                    { label: "Reports Today", value: analytics.reportsToday, color: "text-rose-300", dot: "bg-rose-400" },
+                  ].map(({ label, value, color, dot }) => (
+                    <div key={label} className="bg-white/10 rounded-2xl p-4 backdrop-blur border border-white/15">
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <div className={`w-1.5 h-1.5 rounded-full ${dot}`} />
+                        <p className="text-white/50 text-[10px] font-semibold uppercase tracking-wide">{label}</p>
+                      </div>
+                      <p className={`font-extrabold text-3xl leading-none ${color}`}>
+                        {value.toLocaleString()}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* ── Top categories ── */}
+                {analytics.topCategories.length > 0 && (
+                  <div className="bg-white/10 rounded-2xl p-4 backdrop-blur border border-white/15">
+                    <p className="text-white/60 text-[10px] font-semibold uppercase tracking-wide mb-3">Top Categories</p>
+                    <div className="space-y-2.5">
+                      {(() => {
+                        const max = analytics.topCategories[0].count;
+                        return analytics.topCategories.map(({ category, count }) => (
+                          <div key={category}>
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="text-white text-xs font-semibold">{category}</span>
+                              <span className="text-white/50 text-xs">{count}</span>
+                            </div>
+                            <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                              <div
+                                className="h-full rounded-full bg-gradient-to-r from-violet-400 to-purple-500 transition-all duration-500"
+                                style={{ width: `${Math.round((count / max) * 100)}%` }}
+                              />
+                            </div>
+                          </div>
+                        ));
+                      })()}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Most voted habits ── */}
+                {analytics.mostVotedHabits.length > 0 && (
+                  <div className="bg-white/10 rounded-2xl p-4 backdrop-blur border border-white/15">
+                    <p className="text-white/60 text-[10px] font-semibold uppercase tracking-wide mb-3">Most Voted</p>
+                    <div className="space-y-3">
+                      {analytics.mostVotedHabits.map((habit, i) => (
+                        <div key={habit.id} className="flex items-start gap-3">
+                          <div className="w-5 h-5 rounded-full bg-white/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <span className="text-white/60 text-[10px] font-extrabold">{i + 1}</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white text-xs font-medium leading-snug line-clamp-2">{habit.question}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-white/40 text-[10px]">{habit.answerCount.toLocaleString()} votes</span>
+                              <span className="text-white/25 text-[10px]">·</span>
+                              <span className="text-white/40 text-[10px]">{habit.meTooPct}% me too</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
               </div>
             )}
           </>
