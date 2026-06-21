@@ -13,8 +13,13 @@ import { CATEGORY_EMOJI } from "../engine/personality";
 import type { Category } from "../types";
 
 const SESSION_KEY = "ain_session_id";
-function getSessionId(): string | null {
-  return localStorage.getItem(SESSION_KEY);
+function getOrCreateSessionId(): string {
+  let id = localStorage.getItem(SESSION_KEY);
+  if (!id) {
+    id = `s_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+    localStorage.setItem(SESSION_KEY, id);
+  }
+  return id;
 }
 
 type LocalAnswers = Record<number, "me_too" | "not_me">;
@@ -190,9 +195,9 @@ export default function CategoryFeedScreen() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
   const [localAnswers, setLocalAnswers] = useState<LocalAnswers>({});
-  const sessionId = getSessionId();
+  const sessionId = getOrCreateSessionId();
 
-  const queryParams = { category, ...(sessionId ? { sessionId } : {}) };
+  const queryParams = { category, sessionId };
 
   const { data: habits, isLoading } = useGetHabitsByCategory(queryParams, {
     query: {
@@ -212,10 +217,8 @@ export default function CategoryFeedScreen() {
   });
 
   const handleAnswer = (habitId: number, answer: "me_too" | "not_me") => {
-    const sid = sessionId;
-    if (!sid) return;
     setLocalAnswers((prev) => ({ ...prev, [habitId]: answer }));
-    recordAnswer.mutate({ data: { habitId, answer, sessionId: sid } });
+    recordAnswer.mutate({ data: { habitId, answer, sessionId } });
   };
 
   // Aggregate stats — only count habits with real votes for the percentage average

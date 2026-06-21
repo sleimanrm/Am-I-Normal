@@ -11,8 +11,13 @@ import type { TrendingHabit } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 const SESSION_KEY = "ain_session_id";
-function getSessionId(): string | null {
-  return localStorage.getItem(SESSION_KEY);
+function getOrCreateSessionId(): string {
+  let id = localStorage.getItem(SESSION_KEY);
+  if (!id) {
+    id = `s_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+    localStorage.setItem(SESSION_KEY, id);
+  }
+  return id;
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -202,11 +207,11 @@ function SectionHeader({ emoji, title, delay }: { emoji: string; title: string; 
 
 export default function TrendingScreen() {
   const [, navigate] = useLocation();
-  const sessionId = getSessionId();
+  const sessionId = getOrCreateSessionId();
   const queryClient = useQueryClient();
   const [localAnswers, setLocalAnswers] = useState<LocalAnswers>({});
 
-  const trendingParams = sessionId ? { sessionId } : undefined;
+  const trendingParams = { sessionId };
   const { data, isLoading } = useGetTrending(trendingParams, {
     query: { queryKey: getGetTrendingQueryKey(trendingParams) },
   });

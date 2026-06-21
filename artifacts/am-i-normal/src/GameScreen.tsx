@@ -437,8 +437,9 @@ export default function GameScreen() {
 
   if (!current && view !== "landing") {
     return (
-      <div className="min-h-[100dvh] w-full flex items-center justify-center bg-gradient-to-br from-[#7C3AED] to-[#4C1D95]">
-        <div className="text-white/60 font-semibold">Loading habits…</div>
+      <div className="min-h-[100dvh] w-full flex flex-col items-center justify-center gap-4 bg-gradient-to-br from-[#7C3AED] to-[#4C1D95]">
+        <div className="w-10 h-10 border-4 border-white/25 border-t-white rounded-full animate-spin" />
+        <p className="text-white/55 font-medium text-sm">Loading habits…</p>
       </div>
     );
   }

@@ -65,6 +65,18 @@ export default function CategoriesScreen() {
               <div key={i} className="h-28 rounded-2xl bg-white/10 animate-pulse" />
             ))}
           </div>
+        ) : (categories ?? []).length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white/10 rounded-2xl p-10 text-center mt-2"
+          >
+            <p className="text-4xl mb-3">🗂️</p>
+            <p className="text-white font-bold text-lg">No categories yet</p>
+            <p className="text-white/55 text-sm mt-1">
+              Categories will appear here once habits are approved.
+            </p>
+          </motion.div>
         ) : (
           <motion.div
             className="grid grid-cols-2 gap-3 mt-2"
