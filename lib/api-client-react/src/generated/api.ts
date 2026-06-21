@@ -25,6 +25,8 @@ import type {
   AdminHabit,
   Answer,
   AnswerInput,
+  AuthResponse,
+  AuthUser,
   CategorySummary,
   FlaggedHabit,
   FlaggedHabitUpdate,
@@ -35,9 +37,11 @@ import type {
   HabitUpdate,
   HealthStatus,
   ListSubmissionsParams,
+  LoginInput,
   MySubmission,
   ReportInput,
   ReportResult,
+  SignupInput,
   Submission,
   SubmissionInput,
   SubmissionUpdate,
@@ -458,6 +462,302 @@ export function useGetHabitsByCategory<TData = Awaited<ReturnType<typeof getHabi
 
 
 
+export const getSignupUrl = () => {
+
+
+
+
+  return `/api/auth/signup`
+}
+
+/**
+ * @summary Create a new account
+ */
+export const signup = async (signupInput: SignupInput, options?: RequestInit): Promise<AuthResponse> => {
+
+  return customFetch<AuthResponse>(getSignupUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      signupInput,)
+  }
+);}
+
+
+
+
+export const getSignupMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof signup>>, TError,{data: BodyType<SignupInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof signup>>, TError,{data: BodyType<SignupInput>}, TContext> => {
+
+const mutationKey = ['signup'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof signup>>, {data: BodyType<SignupInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  signup(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SignupMutationResult = NonNullable<Awaited<ReturnType<typeof signup>>>
+    export type SignupMutationBody = BodyType<SignupInput>
+    export type SignupMutationError = ErrorType<void>
+
+    /**
+ * @summary Create a new account
+ */
+export const useSignup = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof signup>>, TError,{data: BodyType<SignupInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof signup>>,
+        TError,
+        {data: BodyType<SignupInput>},
+        TContext
+      > => {
+      return useMutation(getSignupMutationOptions(options));
+    }
+
+export const getLoginUrl = () => {
+
+
+
+
+  return `/api/auth/login`
+}
+
+/**
+ * @summary Log in with email and password
+ */
+export const login = async (loginInput: LoginInput, options?: RequestInit): Promise<AuthResponse> => {
+
+  return customFetch<AuthResponse>(getLoginUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      loginInput,)
+  }
+);}
+
+
+
+
+export const getLoginMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof login>>, TError,{data: BodyType<LoginInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof login>>, TError,{data: BodyType<LoginInput>}, TContext> => {
+
+const mutationKey = ['login'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof login>>, {data: BodyType<LoginInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  login(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LoginMutationResult = NonNullable<Awaited<ReturnType<typeof login>>>
+    export type LoginMutationBody = BodyType<LoginInput>
+    export type LoginMutationError = ErrorType<void>
+
+    /**
+ * @summary Log in with email and password
+ */
+export const useLogin = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof login>>, TError,{data: BodyType<LoginInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof login>>,
+        TError,
+        {data: BodyType<LoginInput>},
+        TContext
+      > => {
+      return useMutation(getLoginMutationOptions(options));
+    }
+
+export const getGetMeUrl = () => {
+
+
+
+
+  return `/api/auth/me`
+}
+
+/**
+ * @summary Get the currently authenticated user
+ */
+export const getMe = async ( options?: RequestInit): Promise<AuthUser> => {
+
+  return customFetch<AuthUser>(getGetMeUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMeQueryKey = () => {
+    return [
+    `/api/auth/me`
+    ] as const;
+    }
+
+
+export const getGetMeQueryOptions = <TData = Awaited<ReturnType<typeof getMe>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMe>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMeQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMe>>> = ({ signal }) => getMe({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMe>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMeQueryResult = NonNullable<Awaited<ReturnType<typeof getMe>>>
+export type GetMeQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get the currently authenticated user
+ */
+
+export function useGetMe<TData = Awaited<ReturnType<typeof getMe>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMe>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMeQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetVotedHabitsUrl = () => {
+
+
+
+
+  return `/api/answers/voted`
+}
+
+/**
+ * @summary Get habit IDs the current user has already voted on
+ */
+export const getVotedHabits = async ( options?: RequestInit): Promise<number[]> => {
+
+  return customFetch<number[]>(getGetVotedHabitsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetVotedHabitsQueryKey = () => {
+    return [
+    `/api/answers/voted`
+    ] as const;
+    }
+
+
+export const getGetVotedHabitsQueryOptions = <TData = Awaited<ReturnType<typeof getVotedHabits>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getVotedHabits>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetVotedHabitsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getVotedHabits>>> = ({ signal }) => getVotedHabits({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getVotedHabits>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetVotedHabitsQueryResult = NonNullable<Awaited<ReturnType<typeof getVotedHabits>>>
+export type GetVotedHabitsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get habit IDs the current user has already voted on
+ */
+
+export function useGetVotedHabits<TData = Awaited<ReturnType<typeof getVotedHabits>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getVotedHabits>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetVotedHabitsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
 export const getRecordAnswerUrl = () => {
 
 
@@ -600,7 +900,7 @@ export const useCreateSubmission = <TError = ErrorType<void>,
       return useMutation(getCreateSubmissionMutationOptions(options));
     }
 
-export const getGetMySubmissionsUrl = (params: GetMySubmissionsParams,) => {
+export const getGetMySubmissionsUrl = (params?: GetMySubmissionsParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -618,7 +918,7 @@ export const getGetMySubmissionsUrl = (params: GetMySubmissionsParams,) => {
 /**
  * @summary Get current user's submissions with live habit stats
  */
-export const getMySubmissions = async (params: GetMySubmissionsParams, options?: RequestInit): Promise<MySubmission[]> => {
+export const getMySubmissions = async (params?: GetMySubmissionsParams, options?: RequestInit): Promise<MySubmission[]> => {
 
   return customFetch<MySubmission[]>(getGetMySubmissionsUrl(params),
   {
@@ -640,7 +940,7 @@ export const getGetMySubmissionsQueryKey = (params?: GetMySubmissionsParams,) =>
     }
 
 
-export const getGetMySubmissionsQueryOptions = <TData = Awaited<ReturnType<typeof getMySubmissions>>, TError = ErrorType<void>>(params: GetMySubmissionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMySubmissions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetMySubmissionsQueryOptions = <TData = Awaited<ReturnType<typeof getMySubmissions>>, TError = ErrorType<void>>(params?: GetMySubmissionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMySubmissions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -667,7 +967,7 @@ export type GetMySubmissionsQueryError = ErrorType<void>
  */
 
 export function useGetMySubmissions<TData = Awaited<ReturnType<typeof getMySubmissions>>, TError = ErrorType<void>>(
- params: GetMySubmissionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMySubmissions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ params?: GetMySubmissionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMySubmissions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 

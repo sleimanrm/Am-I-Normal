@@ -4,6 +4,8 @@ import { ArrowLeft, Send, Check, ClipboardList, CheckCircle2, Circle, XCircle } 
 import { useLocation } from "wouter";
 import { useCreateSubmission } from "@workspace/api-client-react";
 import { validateHabit, getLiveChecks } from "../lib/habitValidator";
+import { useAuth } from "../contexts/AuthContext";
+import LoginPromptModal from "../components/LoginPromptModal";
 
 const SESSION_KEY = "ain_session_id";
 function getOrCreateSessionId(): string {
@@ -96,9 +98,11 @@ function QualityChecks({ text }: { text: string }) {
 
 export default function SubmitScreen() {
   const [, navigate] = useLocation();
+  const { user } = useAuth();
   const [question, setQuestion] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [validationError, setValidationError] = useState("");
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
   const sessionId = getOrCreateSessionId();
 
@@ -107,6 +111,10 @@ export default function SubmitScreen() {
   });
 
   const handleSubmit = () => {
+    if (!user) {
+      setShowLoginPrompt(true);
+      return;
+    }
     const trimmed = question.trim();
     const result = validateHabit(trimmed);
     if (!result.ok) {
@@ -271,6 +279,12 @@ export default function SubmitScreen() {
 
         </AnimatePresence>
       </div>
+
+      <LoginPromptModal
+        open={showLoginPrompt}
+        onClose={() => setShowLoginPrompt(false)}
+        message="Create a free account to share your weird habits with the world."
+      />
     </div>
   );
 }

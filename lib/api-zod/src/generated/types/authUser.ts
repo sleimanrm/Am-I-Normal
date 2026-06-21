@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type GetMySubmissionsParams = {
-sessionId?: string;
-};
+export interface AuthUser {
+  id: number;
+  email: string;
+  createdAt: Date;
+}

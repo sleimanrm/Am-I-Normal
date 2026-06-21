@@ -5,9 +5,11 @@ import answersRouter from "./answers";
 import submissionsRouter from "./submissions";
 import traitScoresRouter from "./traitScores";
 import adminRouter from "./admin";
+import authRouter from "./auth";
 
 const router: IRouter = Router();
 
+router.use(authRouter);
 router.use(adminRouter);
 router.use(healthRouter);
 router.use(habitsRouter);

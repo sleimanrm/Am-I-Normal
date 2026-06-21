@@ -7,11 +7,15 @@ import HabitDetailScreen from "./pages/HabitDetailScreen";
 import TrendingScreen from "./pages/TrendingScreen";
 import CategoriesScreen from "./pages/CategoriesScreen";
 import CategoryFeedScreen from "./pages/CategoryFeedScreen";
+import LoginScreen from "./pages/LoginScreen";
+import SignupScreen from "./pages/SignupScreen";
 
 export default function App() {
   return (
     <Switch>
       <Route path="/admin" component={AdminScreen} />
+      <Route path="/login" component={LoginScreen} />
+      <Route path="/signup" component={SignupScreen} />
       <Route path="/submit" component={SubmitScreen} />
       <Route path="/my-habits/:id" component={HabitDetailScreen} />
       <Route path="/my-habits" component={MyHabitsScreen} />

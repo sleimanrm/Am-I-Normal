@@ -10,11 +10,15 @@ export const submissionsTable = pgTable(
     status: text("status").notNull().default("pending"),
     habitId: integer("habit_id"),
     submitterSessionId: text("submitter_session_id"),
+    submitterUserId: integer("submitter_user_id"),
     moderationReason: text("moderation_reason"),
     submittedAt: timestamp("submitted_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
   },
-  (t) => [index("submissions_session_id_idx").on(t.submitterSessionId)],
+  (t) => [
+    index("submissions_session_id_idx").on(t.submitterSessionId),
+    index("submissions_user_id_idx").on(t.submitterUserId),
+  ],
 );
 
 export const insertSubmissionSchema = createInsertSchema(submissionsTable).omit({ id: true, submittedAt: true, updatedAt: true });

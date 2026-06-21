@@ -8,13 +8,13 @@ import {
   UpdateSubmissionBody,
   UpdateSubmissionParams,
   UpdateSubmissionResponse,
-  GetMySubmissionsQueryParams,
   GetMySubmissionsResponse,
 } from "@workspace/api-zod";
+import { optionalAuth, requireAuth } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
-router.post("/submissions", async (req, res): Promise<void> => {
+router.post("/submissions", optionalAuth, requireAuth, async (req, res): Promise<void> => {
   const body = CreateSubmissionBody.safeParse(req.body);
   if (!body.success) {
     res.status(400).json({ error: body.error.message });
@@ -23,21 +23,19 @@ router.post("/submissions", async (req, res): Promise<void> => {
 
   const normalised = body.data.question.trim().toLowerCase();
 
-  // Check for an identical habit already in the habits table
   const existingHabit = await db
     .select({ id: habitsTable.id })
     .from(habitsTable)
     .where(sql`LOWER(TRIM(${habitsTable.question})) = ${normalised}`)
     .limit(1);
 
-  // Check for an identical non-rejected submission
   const existingSubmission = await db
     .select({ id: submissionsTable.id })
     .from(submissionsTable)
     .where(
       or(
-        sql`LOWER(TRIM(${submissionsTable.question})) = ${normalised} AND ${submissionsTable.status} != 'rejected'`
-      )
+        sql`LOWER(TRIM(${submissionsTable.question})) = ${normalised} AND ${submissionsTable.status} != 'rejected'`,
+      ),
     )
     .limit(1);
 
@@ -52,6 +50,7 @@ router.post("/submissions", async (req, res): Promise<void> => {
       question: body.data.question.trim(),
       status: "pending",
       submitterSessionId: body.data.sessionId ?? null,
+      submitterUserId: req.user!.userId,
     })
     .returning();
 
@@ -65,13 +64,7 @@ router.post("/submissions", async (req, res): Promise<void> => {
   });
 });
 
-router.get("/submissions/mine", async (req, res): Promise<void> => {
-  const params = GetMySubmissionsQueryParams.safeParse(req.query);
-  if (!params.success) {
-    res.status(400).json({ error: "sessionId is required" });
-    return;
-  }
-
+router.get("/submissions/mine", optionalAuth, requireAuth, async (req, res): Promise<void> => {
   const rows = await db
     .select({
       id: submissionsTable.id,
@@ -93,7 +86,7 @@ router.get("/submissions/mine", async (req, res): Promise<void> => {
     .from(submissionsTable)
     .leftJoin(habitsTable, eq(habitsTable.id, submissionsTable.habitId))
     .leftJoin(answersTable, eq(answersTable.habitId, habitsTable.id))
-    .where(eq(submissionsTable.submitterSessionId, params.data.sessionId))
+    .where(eq(submissionsTable.submitterUserId, req.user!.userId))
     .groupBy(submissionsTable.id, habitsTable.id, habitsTable.meTooPctDefault)
     .orderBy(submissionsTable.submittedAt);
 
@@ -104,8 +97,8 @@ router.get("/submissions/mine", async (req, res): Promise<void> => {
         meTooPct: r.meTooPct !== null ? Number(r.meTooPct) : null,
         answerCount: Number(r.answerCount),
         reportCount: Number(r.reportCount),
-      }))
-    )
+      })),
+    ),
   );
 });
 
@@ -119,10 +112,7 @@ router.get("/admin/submissions", async (req, res): Promise<void> => {
         .from(submissionsTable)
         .where(eq(submissionsTable.status, status))
         .orderBy(submissionsTable.submittedAt)
-    : await db
-        .select()
-        .from(submissionsTable)
-        .orderBy(submissionsTable.submittedAt);
+    : await db.select().from(submissionsTable).orderBy(submissionsTable.submittedAt);
 
   res.json(ListSubmissionsResponse.parse(rows));
 });
@@ -156,7 +146,6 @@ router.patch("/admin/submissions/:id", async (req, res): Promise<void> => {
   if (body.data.question !== undefined) updateValues.question = body.data.question.trim();
   if ("moderationReason" in body.data) updateValues.moderationReason = body.data.moderationReason ?? null;
 
-  // Approving → create habit if not already approved, clear moderation reason
   if (body.data.status === "approved" && existing.status !== "approved") {
     const question = body.data.question?.trim() ?? existing.question;
     const category = body.data.category?.trim() || "Community";
@@ -175,7 +164,6 @@ router.patch("/admin/submissions/:id", async (req, res): Promise<void> => {
     updateValues.moderationReason = null;
   }
 
-  // Editing an already-approved submission → update the associated habit text too
   if (body.data.status === undefined && body.data.question && existing.status === "approved" && existing.habitId) {
     await db
       .update(habitsTable)
@@ -183,7 +171,6 @@ router.patch("/admin/submissions/:id", async (req, res): Promise<void> => {
       .where(eq(habitsTable.id, existing.habitId));
   }
 
-  // Rejecting → archive associated habit if any
   if (body.data.status === "rejected" && existing.habitId) {
     await db
       .update(habitsTable)

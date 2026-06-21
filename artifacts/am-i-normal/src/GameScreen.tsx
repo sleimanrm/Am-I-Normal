@@ -1,14 +1,18 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from "framer-motion";
-import { Check, X, ArrowRight, Sparkles, Flame, Brain, Plus, ClipboardList, Flag, TrendingUp, LayoutGrid } from "lucide-react";
+import { Check, X, ArrowRight, Sparkles, Flame, Brain, Plus, ClipboardList, Flag, TrendingUp, LayoutGrid, LogOut, User } from "lucide-react";
 import { useLocation } from "wouter";
 import {
   useGetHabits,
   useRecordAnswer,
   useUpsertTraitScores,
   useReportHabit,
+  useGetVotedHabits,
+  getGetVotedHabitsQueryKey,
 } from "@workspace/api-client-react";
 import type { Habit } from "@workspace/api-client-react";
+import { useAuth } from "./contexts/AuthContext";
+import LoginPromptModal from "./components/LoginPromptModal";
 
 import type { Answer, Trait, TraitScores } from "./types";
 import type { Category } from "./types";
@@ -337,9 +341,13 @@ function buildQueue(habits: Habit[]): Habit[] {
 
 export default function GameScreen() {
   const [, navigate] = useLocation();
+  const { user, logout } = useAuth();
   const sessionId = useMemo(() => getOrCreateSessionId(), []);
 
   const { data: habitsData = [], isLoading } = useGetHabits();
+  const { data: votedHabitIds = [] } = useGetVotedHabits({
+    query: { enabled: !!user, queryKey: getGetVotedHabitsQueryKey() },
+  });
   const recordAnswer = useRecordAnswer();
   const upsertTraitScores = useUpsertTraitScores();
 
@@ -350,18 +358,26 @@ export default function GameScreen() {
   const [streak, setStreak] = useState(0);
   const [traitScores, setTraitScores] = useState<TraitScores>(emptyScores);
   const [traitMax, setTraitMax] = useState<TraitScores>(emptyScores);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+
+  const votedSet = useMemo(() => new Set(votedHabitIds), [votedHabitIds]);
 
   const current = queue[queueIndex] ?? queue[0];
   const next = queue[(queueIndex + 1) % Math.max(queue.length, 1)];
 
   const handleStart = () => {
-    setQueue(buildQueue(habitsData));
+    const unvoted = habitsData.filter((h) => !votedSet.has(h.id));
+    setQueue(buildQueue(unvoted.length > 0 ? unvoted : habitsData));
     setQueueIndex(0);
     setView("question");
   };
 
   const handleAnswer = (answer: Answer) => {
     if (!current) return;
+    if (!user) {
+      setShowLoginPrompt(true);
+      return;
+    }
 
     const newMax = addTraitPoints(traitMax, current.traits as Partial<Record<Trait, number>>);
     const newScores = answer === "me-too"
@@ -662,6 +678,28 @@ export default function GameScreen() {
             transition={{ type: "spring", bounce: 0.3 }}
             className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-3 py-2 shadow-2xl shadow-black/30"
           >
+            {user ? (
+              <motion.button
+                whileHover={{ scale: 1.12 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={logout}
+                title={`Logged in as ${user.email} — tap to sign out`}
+                className="w-12 h-12 rounded-full bg-white/15 hover:bg-white/25 transition-colors flex items-center justify-center"
+              >
+                <LogOut className="w-4 h-4 text-white" />
+              </motion.button>
+            ) : (
+              <motion.button
+                whileHover={{ scale: 1.12 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => navigate("/login")}
+                title="Sign in"
+                className="w-12 h-12 rounded-full bg-white/15 hover:bg-white/25 transition-colors flex items-center justify-center"
+              >
+                <User className="w-4 h-4 text-white" />
+              </motion.button>
+            )}
+            <div className="w-px h-7 bg-white/20 mx-1" />
             <motion.button
               whileHover={{ scale: 1.12 }}
               whileTap={{ scale: 0.9 }}
@@ -702,6 +740,12 @@ export default function GameScreen() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <LoginPromptModal
+        open={showLoginPrompt}
+        onClose={() => setShowLoginPrompt(false)}
+        message="Create a free account to vote on habits and see where you stand."
+      />
     </div>
   );
 }

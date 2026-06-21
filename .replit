@@ -38,3 +38,4 @@ channel = "stable-25_05"
 
 [userenv.shared]
 ADMIN_PIN = "0000"
+JWT_SECRET = "ain_jwt_1782034666603_ezlt8rz9ez238gshrrrqe"

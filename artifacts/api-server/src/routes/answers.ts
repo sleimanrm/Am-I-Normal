@@ -1,11 +1,21 @@
 import { Router, type IRouter } from "express";
 import { db, answersTable, habitsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { RecordAnswerBody } from "@workspace/api-zod";
+import { optionalAuth, requireAuth } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
-router.post("/answers", async (req, res): Promise<void> => {
+router.get("/answers/voted", optionalAuth, requireAuth, async (req, res): Promise<void> => {
+  const rows = await db
+    .select({ habitId: answersTable.habitId })
+    .from(answersTable)
+    .where(eq(answersTable.userId, req.user!.userId));
+
+  res.json(rows.map((r) => r.habitId));
+});
+
+router.post("/answers", optionalAuth, requireAuth, async (req, res): Promise<void> => {
   const body = RecordAnswerBody.safeParse(req.body);
   if (!body.success) {
     res.status(400).json({ error: body.error.message });
@@ -22,12 +32,28 @@ router.post("/answers", async (req, res): Promise<void> => {
     return;
   }
 
+  const [existingVote] = await db
+    .select({ id: answersTable.id })
+    .from(answersTable)
+    .where(
+      and(
+        eq(answersTable.habitId, body.data.habitId),
+        eq(answersTable.userId, req.user!.userId),
+      ),
+    );
+
+  if (existingVote) {
+    res.status(409).json({ error: "Already voted on this habit" });
+    return;
+  }
+
   const [answer] = await db
     .insert(answersTable)
     .values({
       habitId: body.data.habitId,
       sessionId: body.data.sessionId,
       answer: body.data.answer,
+      userId: req.user!.userId,
     })
     .returning();
 

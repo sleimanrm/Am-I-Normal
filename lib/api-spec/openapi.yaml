@@ -20,6 +20,8 @@ tags:
     description: Admin operations
   - name: traitScores
     description: Per-session trait scores
+  - name: auth
+    description: Authentication
 paths:
   /healthz:
     get:
@@ -111,6 +113,80 @@ paths:
         "400":
           description: Missing category
 
+  /auth/signup:
+    post:
+      operationId: signup
+      tags: [auth]
+      summary: Create a new account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignupInput"
+      responses:
+        "201":
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "409":
+          description: Email already registered
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Log in with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get the currently authenticated user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "401":
+          description: Not authenticated
+
+  /answers/voted:
+    get:
+      operationId: getVotedHabits
+      tags: [answers]
+      summary: Get habit IDs the current user has already voted on
+      responses:
+        "200":
+          description: List of voted habit IDs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: integer
+        "401":
+          description: Not authenticated
+
   /answers:
     post:
       operationId: recordAnswer
@@ -163,7 +239,7 @@ paths:
           name: sessionId
           schema:
             type: string
-          required: true
+          required: false
       responses:
         "200":
           description: List of user's submissions with habit stats
@@ -548,6 +624,46 @@ components:
                 type: string
               count:
                 type: integer
+
+    SignupInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+          minLength: 6
+
+    LoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    AuthUser:
+      type: object
+      required: [id, email, createdAt]
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    AuthResponse:
+      type: object
+      required: [token, user]
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/AuthUser"
 
     AdminAuth:
       type: object

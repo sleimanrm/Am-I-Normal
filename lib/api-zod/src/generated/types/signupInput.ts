@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type GetMySubmissionsParams = {
-sessionId?: string;
-};
+export interface SignupInput {
+  email: string;
+  /** @minLength 6 */
+  password: string;
+}

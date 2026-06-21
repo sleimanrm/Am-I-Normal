@@ -73,6 +73,28 @@ export interface FlaggedHabit {
   topReasons: FlaggedHabitTopReasonsItem[];
 }
 
+export interface SignupInput {
+  email: string;
+  /** @minLength 6 */
+  password: string;
+}
+
+export interface LoginInput {
+  email: string;
+  password: string;
+}
+
+export interface AuthUser {
+  id: number;
+  email: string;
+  createdAt: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  user: AuthUser;
+}
+
 export interface AdminAuth {
   pin: string;
 }
@@ -189,7 +211,7 @@ sessionId?: string;
 };
 
 export type GetMySubmissionsParams = {
-sessionId: string;
+sessionId?: string;
 };
 
 export type ListSubmissionsParams = {

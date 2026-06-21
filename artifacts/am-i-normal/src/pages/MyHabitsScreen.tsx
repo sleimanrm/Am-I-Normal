@@ -1,13 +1,9 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Clock, CheckCircle2, XCircle, Users, Percent, Trophy, Fingerprint, ChevronRight } from "lucide-react";
+import { ArrowLeft, Clock, CheckCircle2, XCircle, Users, Percent, Trophy, Fingerprint, ChevronRight, LogIn } from "lucide-react";
 import { useLocation } from "wouter";
 import { useGetMySubmissions, getGetMySubmissionsQueryKey } from "@workspace/api-client-react";
 import type { MySubmission } from "@workspace/api-client-react";
-
-const SESSION_KEY = "ain_session_id";
-function getSessionId(): string | null {
-  return localStorage.getItem(SESSION_KEY);
-}
+import { useAuth } from "../contexts/AuthContext";
 
 // ── Status config ─────────────────────────────────────────────────────────────
 
@@ -164,13 +160,13 @@ function HighlightCard({
 
 export default function MyHabitsScreen() {
   const [, navigate] = useLocation();
+  const { user } = useAuth();
   const goToDetail = (id: number) => navigate(`/my-habits/${id}`);
-  const sessionId = getSessionId();
 
-  const qParams = { sessionId: sessionId ?? "" };
+  const qParams = {};
   const { data: submissions = [], isLoading } = useGetMySubmissions(
     qParams,
-    { query: { enabled: !!sessionId, queryKey: getGetMySubmissionsQueryKey(qParams) } }
+    { query: { enabled: !!user, queryKey: getGetMySubmissionsQueryKey(qParams) } }
   );
 
   const approvedWithPct = submissions.filter(
@@ -216,17 +212,53 @@ export default function MyHabitsScreen() {
           className="mb-6"
         >
           <h1 className="text-3xl font-extrabold text-white tracking-tight">My Habits</h1>
-          <p className="text-purple-200 font-medium text-sm mt-1">
-            {submissions.length === 0 && !isLoading
-              ? "Habits you submit will appear here."
-              : `${submissions.length} habit${submissions.length !== 1 ? "s" : ""} submitted`}
-          </p>
+          {user && (
+            <p className="text-purple-200 font-medium text-sm mt-1">
+              {submissions.length === 0 && !isLoading
+                ? "Habits you submit will appear here."
+                : `${submissions.length} habit${submissions.length !== 1 ? "s" : ""} submitted`}
+            </p>
+          )}
         </motion.div>
 
         <AnimatePresence mode="wait">
 
+          {/* Not logged in */}
+          {!user && (
+            <motion.div
+              key="not-authed"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-card rounded-[1.5rem] p-8 shadow-xl text-center"
+            >
+              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <LogIn className="w-7 h-7 text-primary" />
+              </div>
+              <p className="text-card-foreground font-bold text-lg mb-2">Sign in to see your habits</p>
+              <p className="text-card-foreground/50 text-sm leading-relaxed mb-6">
+                Create an account to submit habits and track how many people relate.
+              </p>
+              <div className="flex gap-3">
+                <motion.button
+                  whileTap={{ scale: 0.96 }}
+                  onClick={() => navigate("/login")}
+                  className="flex-1 py-3 rounded-full border-2 border-primary text-primary font-bold text-sm hover:bg-primary/5 transition-colors"
+                >
+                  Log In
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.96 }}
+                  onClick={() => navigate("/signup")}
+                  className="flex-1 py-3 rounded-full bg-primary text-white font-bold text-sm shadow-lg shadow-primary/30"
+                >
+                  Sign Up
+                </motion.button>
+              </div>
+            </motion.div>
+          )}
+
           {/* Loading */}
-          {isLoading && (
+          {user && isLoading && (
             <motion.div
               key="loading"
               initial={{ opacity: 0 }}
@@ -239,28 +271,8 @@ export default function MyHabitsScreen() {
             </motion.div>
           )}
 
-          {/* No session or empty */}
-          {!isLoading && !sessionId && (
-            <motion.div
-              key="no-session"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-card rounded-[1.5rem] p-8 shadow-xl text-center"
-            >
-              <p className="text-card-foreground/60 font-medium">
-                Start playing and submit a habit to see it here.
-              </p>
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                onClick={() => navigate("/")}
-                className="mt-5 bg-primary text-white font-bold px-6 py-3 rounded-full text-sm"
-              >
-                Start Discovering
-              </motion.button>
-            </motion.div>
-          )}
-
-          {!isLoading && sessionId && submissions.length === 0 && (
+          {/* Empty */}
+          {user && !isLoading && submissions.length === 0 && (
             <motion.div
               key="empty"
               initial={{ opacity: 0, y: 12 }}
@@ -282,7 +294,7 @@ export default function MyHabitsScreen() {
             </motion.div>
           )}
 
-          {!isLoading && sessionId && submissions.length > 0 && (
+          {user && !isLoading && submissions.length > 0 && (
             <motion.div key="content" className="flex flex-col gap-4">
 
               {/* Highlights */}

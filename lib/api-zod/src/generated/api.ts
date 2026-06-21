@@ -107,6 +107,54 @@ export const GetHabitsByCategoryResponse = zod.array(GetHabitsByCategoryResponse
 
 
 /**
+ * @summary Create a new account
+ */
+export const signupBodyPasswordMin = 6;
+
+
+
+export const SignupBody = zod.object({
+  "email": zod.string(),
+  "password": zod.string().min(signupBodyPasswordMin)
+})
+
+
+/**
+ * @summary Log in with email and password
+ */
+export const LoginBody = zod.object({
+  "email": zod.string(),
+  "password": zod.string()
+})
+
+export const LoginResponse = zod.object({
+  "token": zod.string(),
+  "user": zod.object({
+  "id": zod.number(),
+  "email": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+})
+
+
+/**
+ * @summary Get the currently authenticated user
+ */
+export const GetMeResponse = zod.object({
+  "id": zod.number(),
+  "email": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Get habit IDs the current user has already voted on
+ */
+export const GetVotedHabitsResponseItem = zod.number()
+export const GetVotedHabitsResponse = zod.array(GetVotedHabitsResponseItem)
+
+
+/**
  * @summary Record a swipe answer
  */
 export const RecordAnswerBody = zod.object({
@@ -134,7 +182,7 @@ export const CreateSubmissionBody = zod.object({
  * @summary Get current user's submissions with live habit stats
  */
 export const GetMySubmissionsQueryParams = zod.object({
-  "sessionId": zod.coerce.string()
+  "sessionId": zod.coerce.string().optional()
 })
 
 export const GetMySubmissionsResponseItem = zod.object({
