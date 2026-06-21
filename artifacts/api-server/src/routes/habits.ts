@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db, habitsTable, answersTable, reportsTable, moderationLogsTable } from "@workspace/db";
 import { eq, sql, count, desc, and } from "drizzle-orm";
-import { optionalAuth } from "../middlewares/auth";
+import { optionalAuth, requireAdmin } from "../middlewares/auth";
 import {
   GetHabitsResponse,
   GetTrendingQueryParams,
@@ -26,6 +26,8 @@ const router: IRouter = Router();
 
 const FLAG_THRESHOLD = 1;
 const REPORT_DAILY_LIMIT = 20;
+const ANON_REPORT_DAILY_LIMIT = 5;
+const VALID_HABIT_STATUSES = ["active", "archived"] as const;
 
 // ── Habit list ────────────────────────────────────────────────────────────────
 
@@ -239,8 +241,8 @@ router.post("/habits/:id/report", optionalAuth, async (req, res): Promise<void> 
 
   const reporterId = req.user?.userId ?? null;
 
-  // Rate limit: 20 reports per day per logged-in user
   if (reporterId !== null) {
+    // Rate limit: 20 reports per day per logged-in user
     const [{ reportDayCount }] = await db
       .select({ reportDayCount: count() })
       .from(reportsTable)
@@ -270,9 +272,25 @@ router.post("/habits/:id/report", optionalAuth, async (req, res): Promise<void> 
       res.status(409).json({ error: "Already reported" });
       return;
     }
+  } else {
+    // Anonymous reporter: rate limit by sessionId (5 per day)
+    const anonSessionId = body.data.sessionId;
+    const [{ anonReportCount }] = await db
+      .select({ anonReportCount: count() })
+      .from(reportsTable)
+      .where(
+        and(
+          eq(reportsTable.sessionId, anonSessionId),
+          sql`${reportsTable.reportedAt} > NOW() - INTERVAL '1 day'`
+        )
+      );
+    if (anonReportCount >= ANON_REPORT_DAILY_LIMIT) {
+      res.status(429).json({ error: "Too many reports from this session. Try again tomorrow." });
+      return;
+    }
   }
 
-  // Insert report — unique constraint on (habitId, sessionId) catches anonymous duplicates
+  // Insert report — unique constraint on (habitId, sessionId) catches duplicates
   try {
     await db.insert(reportsTable).values({
       habitId: params.data.id,
@@ -311,8 +329,9 @@ router.post("/habits/:id/report", optionalAuth, async (req, res): Promise<void> 
 });
 
 // ── Admin: flagged habits ─────────────────────────────────────────────────────
+// requireAdmin: PIN-issued JWT required
 
-router.get("/admin/flagged-habits", async (req, res): Promise<void> => {
+router.get("/admin/flagged-habits", requireAdmin, async (req, res): Promise<void> => {
   const flagged = await db
     .select({
       id: habitsTable.id,
@@ -347,8 +366,9 @@ router.get("/admin/flagged-habits", async (req, res): Promise<void> => {
 });
 
 // ── Admin: dismiss flag or archive flagged habit ──────────────────────────────
+// requireAdmin: PIN-issued JWT required
 
-router.patch("/admin/flagged-habits/:id", async (req, res): Promise<void> => {
+router.patch("/admin/flagged-habits/:id", requireAdmin, async (req, res): Promise<void> => {
   const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const params = UpdateFlaggedHabitParams.safeParse({ id: parseInt(rawId, 10) });
   if (!params.success) {
@@ -401,8 +421,9 @@ router.patch("/admin/flagged-habits/:id", async (req, res): Promise<void> => {
 });
 
 // ── Admin: list all habits ────────────────────────────────────────────────────
+// requireAdmin: PIN-issued JWT required
 
-router.get("/admin/habits", async (_req, res): Promise<void> => {
+router.get("/admin/habits", requireAdmin, async (_req, res): Promise<void> => {
   const rows = await db
     .select({
       id: habitsTable.id,
@@ -436,8 +457,9 @@ router.get("/admin/habits", async (_req, res): Promise<void> => {
 });
 
 // ── Admin: delete (archive) habit ─────────────────────────────────────────────
+// requireAdmin: PIN-issued JWT required
 
-router.delete("/admin/habits/:id", async (req, res): Promise<void> => {
+router.delete("/admin/habits/:id", requireAdmin, async (req, res): Promise<void> => {
   const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const params = DeleteHabitParams.safeParse({ id: parseInt(rawId, 10) });
   if (!params.success) {
@@ -470,8 +492,9 @@ router.delete("/admin/habits/:id", async (req, res): Promise<void> => {
 });
 
 // ── Admin: edit habit ─────────────────────────────────────────────────────────
+// requireAdmin: PIN-issued JWT required
 
-router.patch("/admin/habits/:id", async (req, res): Promise<void> => {
+router.patch("/admin/habits/:id", requireAdmin, async (req, res): Promise<void> => {
   const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const params = UpdateHabitParams.safeParse({ id: parseInt(rawId, 10) });
   if (!params.success) {
@@ -482,6 +505,12 @@ router.patch("/admin/habits/:id", async (req, res): Promise<void> => {
   const body = UpdateHabitBody.safeParse(req.body);
   if (!body.success) {
     res.status(400).json({ error: body.error.message });
+    return;
+  }
+
+  // Validate status enum — only allow known values to prevent DB inconsistency
+  if (body.data.status !== undefined && !VALID_HABIT_STATUSES.includes(body.data.status as typeof VALID_HABIT_STATUSES[number])) {
+    res.status(400).json({ error: `status must be one of: ${VALID_HABIT_STATUSES.join(", ")}` });
     return;
   }
 
@@ -523,8 +552,9 @@ router.patch("/admin/habits/:id", async (req, res): Promise<void> => {
 });
 
 // ── Admin: moderation log ─────────────────────────────────────────────────────
+// requireAdmin: PIN-issued JWT required
 
-router.get("/admin/moderation-logs", async (req, res): Promise<void> => {
+router.get("/admin/moderation-logs", requireAdmin, async (req, res): Promise<void> => {
   const rawHabitId = req.query.habitId;
   const habitId = rawHabitId ? parseInt(String(rawHabitId), 10) : null;
 

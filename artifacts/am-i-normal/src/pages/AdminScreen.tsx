@@ -65,7 +65,8 @@ function PinGate({ onAuth }: { onAuth: () => void }) {
     mutation: {
       onSuccess: (data) => {
         if (data.ok) {
-          sessionStorage.setItem(SESSION_KEY, "1");
+          const token = (data as { ok: boolean; token?: string }).token ?? "";
+          sessionStorage.setItem(SESSION_KEY, token);
           onAuth();
         } else {
           setShaking(true);
@@ -651,7 +652,7 @@ type FilterTab = "pending" | "approved" | "rejected";
 type HabitFilter = "all" | "curated" | "community";
 
 export default function AdminScreen() {
-  const isAuthed = sessionStorage.getItem(SESSION_KEY) === "1";
+  const isAuthed = !!sessionStorage.getItem(SESSION_KEY);
   const [authed, setAuthed] = useState(isAuthed);
 
   if (!authed) return <PinGate onAuth={() => setAuthed(true)} />;

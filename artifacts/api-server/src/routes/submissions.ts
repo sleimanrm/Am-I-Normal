@@ -10,12 +10,13 @@ import {
   UpdateSubmissionResponse,
   GetMySubmissionsResponse,
 } from "@workspace/api-zod";
-import { optionalAuth, requireAuth } from "../middlewares/auth";
+import { optionalAuth, requireAuth, requireAdmin } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
 const SUBMISSION_DAILY_LIMIT = 5;
 const SIMILARITY_THRESHOLD = 0.6;
+const VALID_SUBMISSION_STATUSES = ["pending", "approved", "rejected"] as const;
 
 router.post("/submissions", optionalAuth, requireAuth, async (req, res): Promise<void> => {
   const body = CreateSubmissionBody.safeParse(req.body);
@@ -140,7 +141,10 @@ router.get("/submissions/mine", optionalAuth, requireAuth, async (req, res): Pro
   );
 });
 
-router.get("/admin/submissions", async (req, res): Promise<void> => {
+// ── Admin: list all submissions ────────────────────────────────────────────────
+// requireAdmin: PIN-issued JWT required
+
+router.get("/admin/submissions", requireAdmin, async (req, res): Promise<void> => {
   const query = ListSubmissionsQueryParams.safeParse(req.query);
   const status = query.success ? query.data.status : undefined;
 
@@ -155,7 +159,10 @@ router.get("/admin/submissions", async (req, res): Promise<void> => {
   res.json(ListSubmissionsResponse.parse(rows));
 });
 
-router.patch("/admin/submissions/:id", async (req, res): Promise<void> => {
+// ── Admin: approve / reject submission ────────────────────────────────────────
+// requireAdmin: PIN-issued JWT required
+
+router.patch("/admin/submissions/:id", requireAdmin, async (req, res): Promise<void> => {
   const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const params = UpdateSubmissionParams.safeParse({ id: parseInt(rawId, 10) });
   if (!params.success) {
@@ -166,6 +173,12 @@ router.patch("/admin/submissions/:id", async (req, res): Promise<void> => {
   const body = UpdateSubmissionBody.safeParse(req.body);
   if (!body.success) {
     res.status(400).json({ error: body.error.message });
+    return;
+  }
+
+  // Validate status enum
+  if (body.data.status !== undefined && !VALID_SUBMISSION_STATUSES.includes(body.data.status as typeof VALID_SUBMISSION_STATUSES[number])) {
+    res.status(400).json({ error: `status must be one of: ${VALID_SUBMISSION_STATUSES.join(", ")}` });
     return;
   }
 

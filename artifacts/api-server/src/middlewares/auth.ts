@@ -8,6 +8,10 @@ export interface AuthPayload {
   email: string;
 }
 
+export interface AdminPayload {
+  admin: true;
+}
+
 declare global {
   namespace Express {
     interface Request {
@@ -33,6 +37,25 @@ export function optionalAuth(req: Request, _res: Response, next: NextFunction): 
 export function requireAuth(req: Request, res: Response, next: NextFunction): void {
   if (!req.user) {
     res.status(401).json({ error: "Authentication required" });
+    return;
+  }
+  next();
+}
+
+export function requireAdmin(req: Request, res: Response, next: NextFunction): void {
+  const adminToken = req.headers["x-admin-token"];
+  if (!adminToken || typeof adminToken !== "string") {
+    res.status(401).json({ error: "Admin authentication required" });
+    return;
+  }
+  try {
+    const payload = jwt.verify(adminToken, JWT_SECRET) as AdminPayload;
+    if (payload.admin !== true) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+  } catch {
+    res.status(401).json({ error: "Invalid or expired admin token" });
     return;
   }
   next();

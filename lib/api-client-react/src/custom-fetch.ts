@@ -358,6 +358,15 @@ export async function customFetch<T = unknown>(
     }
   }
 
+  // Attach admin token from sessionStorage when present (browser only).
+  // The server requires this header on all /admin/* routes.
+  if (typeof sessionStorage !== "undefined") {
+    const adminToken = sessionStorage.getItem("ain_admin_auth");
+    if (adminToken) {
+      headers.set("x-admin-token", adminToken);
+    }
+  }
+
   const requestInfo = { method, url: resolveUrl(input) };
 
   const response = await fetch(input, { ...init, method, headers });
