@@ -295,6 +295,40 @@ paths:
         "404":
           description: Not found
 
+  /admin/auth:
+    post:
+      operationId: verifyAdminPin
+      tags: [admin]
+      summary: Verify admin PIN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminAuth"
+      responses:
+        "200":
+          description: Auth result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAuthResponse"
+
+  /admin/habits:
+    get:
+      operationId: listAdminHabits
+      tags: [admin]
+      summary: List all habits with live vote stats (admin)
+      responses:
+        "200":
+          description: All habits
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminHabit"
+
   /admin/habits/{id}:
     patch:
       operationId: updateHabit
@@ -319,6 +353,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Habit"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteHabit
+      tags: [admin]
+      summary: Archive a habit (admin)
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      responses:
+        "200":
+          description: Archived
         "404":
           description: Not found
 
@@ -499,6 +548,46 @@ components:
                 type: string
               count:
                 type: integer
+
+    AdminAuth:
+      type: object
+      required: [pin]
+      properties:
+        pin:
+          type: string
+
+    AdminAuthResponse:
+      type: object
+      required: [ok]
+      properties:
+        ok:
+          type: boolean
+
+    AdminHabit:
+      type: object
+      required: [id, question, category, source, status, answerCount, meTooPct, reportCount, flagged, createdAt]
+      properties:
+        id:
+          type: integer
+        question:
+          type: string
+        category:
+          type: string
+        source:
+          type: string
+        status:
+          type: string
+        answerCount:
+          type: integer
+        meTooPct:
+          type: number
+        reportCount:
+          type: integer
+        flagged:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
 
     FlaggedHabitUpdate:
       type: object

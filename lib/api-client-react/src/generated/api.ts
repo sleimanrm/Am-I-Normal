@@ -20,6 +20,9 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AdminAuth,
+  AdminAuthResponse,
+  AdminHabit,
   Answer,
   AnswerInput,
   CategorySummary,
@@ -1058,6 +1061,154 @@ export const useUpdateFlaggedHabit = <TError = ErrorType<void>,
       return useMutation(getUpdateFlaggedHabitMutationOptions(options));
     }
 
+export const getVerifyAdminPinUrl = () => {
+
+
+
+
+  return `/api/admin/auth`
+}
+
+/**
+ * @summary Verify admin PIN
+ */
+export const verifyAdminPin = async (adminAuth: AdminAuth, options?: RequestInit): Promise<AdminAuthResponse> => {
+
+  return customFetch<AdminAuthResponse>(getVerifyAdminPinUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      adminAuth,)
+  }
+);}
+
+
+
+
+export const getVerifyAdminPinMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyAdminPin>>, TError,{data: BodyType<AdminAuth>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof verifyAdminPin>>, TError,{data: BodyType<AdminAuth>}, TContext> => {
+
+const mutationKey = ['verifyAdminPin'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof verifyAdminPin>>, {data: BodyType<AdminAuth>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  verifyAdminPin(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type VerifyAdminPinMutationResult = NonNullable<Awaited<ReturnType<typeof verifyAdminPin>>>
+    export type VerifyAdminPinMutationBody = BodyType<AdminAuth>
+    export type VerifyAdminPinMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Verify admin PIN
+ */
+export const useVerifyAdminPin = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyAdminPin>>, TError,{data: BodyType<AdminAuth>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof verifyAdminPin>>,
+        TError,
+        {data: BodyType<AdminAuth>},
+        TContext
+      > => {
+      return useMutation(getVerifyAdminPinMutationOptions(options));
+    }
+
+export const getListAdminHabitsUrl = () => {
+
+
+
+
+  return `/api/admin/habits`
+}
+
+/**
+ * @summary List all habits with live vote stats (admin)
+ */
+export const listAdminHabits = async ( options?: RequestInit): Promise<AdminHabit[]> => {
+
+  return customFetch<AdminHabit[]>(getListAdminHabitsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminHabitsQueryKey = () => {
+    return [
+    `/api/admin/habits`
+    ] as const;
+    }
+
+
+export const getListAdminHabitsQueryOptions = <TData = Awaited<ReturnType<typeof listAdminHabits>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminHabits>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminHabitsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminHabits>>> = ({ signal }) => listAdminHabits({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminHabits>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminHabitsQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminHabits>>>
+export type ListAdminHabitsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all habits with live vote stats (admin)
+ */
+
+export function useListAdminHabits<TData = Awaited<ReturnType<typeof listAdminHabits>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminHabits>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminHabitsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
 export const getUpdateHabitUrl = (id: number,) => {
 
 
@@ -1128,6 +1279,76 @@ export const useUpdateHabit = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getUpdateHabitMutationOptions(options));
+    }
+
+export const getDeleteHabitUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/habits/${id}`
+}
+
+/**
+ * @summary Archive a habit (admin)
+ */
+export const deleteHabit = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteHabitUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteHabitMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteHabit>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteHabit>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteHabit'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteHabit>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteHabit(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteHabitMutationResult = NonNullable<Awaited<ReturnType<typeof deleteHabit>>>
+
+    export type DeleteHabitMutationError = ErrorType<void>
+
+    /**
+ * @summary Archive a habit (admin)
+ */
+export const useDeleteHabit = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteHabit>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteHabit>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteHabitMutationOptions(options));
     }
 
 export const getGetTraitScoresUrl = (sessionId: string,) => {

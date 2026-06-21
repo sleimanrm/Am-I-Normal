@@ -17,6 +17,8 @@ import {
   GetFlaggedHabitsResponse,
   UpdateFlaggedHabitParams,
   UpdateFlaggedHabitBody,
+  ListAdminHabitsResponse,
+  DeleteHabitParams,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -340,6 +342,69 @@ router.patch("/admin/flagged-habits/:id", async (req, res): Promise<void> => {
       .set({ status: "archived" })
       .where(eq(habitsTable.id, params.data.id));
   }
+
+  res.json({ ok: true });
+});
+
+// ── Admin: list all habits ────────────────────────────────────────────────────
+
+router.get("/admin/habits", async (_req, res): Promise<void> => {
+  const rows = await db
+    .select({
+      id: habitsTable.id,
+      question: habitsTable.question,
+      category: habitsTable.category,
+      source: habitsTable.source,
+      status: habitsTable.status,
+      reportCount: habitsTable.reportCount,
+      flagged: habitsTable.flagged,
+      createdAt: habitsTable.createdAt,
+      answerCount: count(answersTable.id),
+      meTooPct: sql<string>`
+        CASE
+          WHEN COUNT(${answersTable.id}) = 0 THEN ${habitsTable.meTooPctDefault}::numeric
+          ELSE ROUND(SUM(CASE WHEN ${answersTable.answer} = 'me_too' THEN 100.0 ELSE 0 END) / COUNT(${answersTable.id}))
+        END
+      `,
+    })
+    .from(habitsTable)
+    .leftJoin(answersTable, eq(answersTable.habitId, habitsTable.id))
+    .groupBy(habitsTable.id)
+    .orderBy(desc(habitsTable.createdAt));
+
+  const parsed = rows.map((r) => ({
+    ...r,
+    meTooPct: Number(r.meTooPct),
+    answerCount: Number(r.answerCount),
+  }));
+
+  res.json(ListAdminHabitsResponse.parse(parsed));
+});
+
+// ── Admin: delete (archive) habit ─────────────────────────────────────────────
+
+router.delete("/admin/habits/:id", async (req, res): Promise<void> => {
+  const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const params = DeleteHabitParams.safeParse({ id: parseInt(rawId, 10) });
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const [habit] = await db
+    .select()
+    .from(habitsTable)
+    .where(eq(habitsTable.id, params.data.id));
+
+  if (!habit) {
+    res.status(404).json({ error: "Habit not found" });
+    return;
+  }
+
+  await db
+    .update(habitsTable)
+    .set({ status: "archived" })
+    .where(eq(habitsTable.id, params.data.id));
 
   res.json({ ok: true });
 });

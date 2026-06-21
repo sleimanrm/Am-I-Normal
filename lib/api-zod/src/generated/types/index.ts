@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './adminAuth';
+export * from './adminAuthResponse';
+export * from './adminHabit';
 export * from './answer';
 export * from './answerInput';
 export * from './categorySummary';

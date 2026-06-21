@@ -73,6 +73,27 @@ export interface FlaggedHabit {
   topReasons: FlaggedHabitTopReasonsItem[];
 }
 
+export interface AdminAuth {
+  pin: string;
+}
+
+export interface AdminAuthResponse {
+  ok: boolean;
+}
+
+export interface AdminHabit {
+  id: number;
+  question: string;
+  category: string;
+  source: string;
+  status: string;
+  answerCount: number;
+  meTooPct: number;
+  reportCount: number;
+  flagged: boolean;
+  createdAt: string;
+}
+
 export interface FlaggedHabitUpdate {
   /** dismiss | archive */
   action?: string;

@@ -243,6 +243,36 @@ export const UpdateFlaggedHabitBody = zod.object({
 
 
 /**
+ * @summary Verify admin PIN
+ */
+export const VerifyAdminPinBody = zod.object({
+  "pin": zod.string()
+})
+
+export const VerifyAdminPinResponse = zod.object({
+  "ok": zod.boolean()
+})
+
+
+/**
+ * @summary List all habits with live vote stats (admin)
+ */
+export const ListAdminHabitsResponseItem = zod.object({
+  "id": zod.number(),
+  "question": zod.string(),
+  "category": zod.string(),
+  "source": zod.string(),
+  "status": zod.string(),
+  "answerCount": zod.number(),
+  "meTooPct": zod.number(),
+  "reportCount": zod.number(),
+  "flagged": zod.boolean(),
+  "createdAt": zod.coerce.date()
+})
+export const ListAdminHabitsResponse = zod.array(ListAdminHabitsResponseItem)
+
+
+/**
  * @summary Edit a habit (admin)
  */
 export const UpdateHabitParams = zod.object({
@@ -266,6 +296,14 @@ export const UpdateHabitResponse = zod.object({
   "answerCount": zod.number(),
   "reportCount": zod.number(),
   "flagged": zod.boolean()
+})
+
+
+/**
+ * @summary Archive a habit (admin)
+ */
+export const DeleteHabitParams = zod.object({
+  "id": zod.coerce.number()
 })
 
 
