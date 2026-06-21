@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, habitsTable, answersTable, reportsTable } from "@workspace/db";
+import { db, habitsTable, answersTable, reportsTable, moderationLogsTable } from "@workspace/db";
 import { eq, sql, count, desc, and } from "drizzle-orm";
 import { optionalAuth } from "../middlewares/auth";
 import {
@@ -25,6 +25,7 @@ import {
 const router: IRouter = Router();
 
 const FLAG_THRESHOLD = 1;
+const REPORT_DAILY_LIMIT = 20;
 
 // ── Habit list ────────────────────────────────────────────────────────────────
 
@@ -104,7 +105,6 @@ router.get("/habits/trending", async (req, res): Promise<void> => {
     userAnswer: r.userAnswer ?? null,
   }));
 
-  // Use all habits for spotlight — meTooPct already falls back to meTooPctDefault when no answers
   const mostRelatable =
     habits.length > 0
       ? habits.reduce((a, b) => (a.meTooPct >= b.meTooPct ? a : b))
@@ -239,8 +239,23 @@ router.post("/habits/:id/report", optionalAuth, async (req, res): Promise<void> 
 
   const reporterId = req.user?.userId ?? null;
 
-  // If logged in, check for duplicate by userId+habitId (unique constraint only covers sessionId)
+  // Rate limit: 20 reports per day per logged-in user
   if (reporterId !== null) {
+    const [{ reportDayCount }] = await db
+      .select({ reportDayCount: count() })
+      .from(reportsTable)
+      .where(
+        and(
+          eq(reportsTable.userId, reporterId),
+          sql`${reportsTable.reportedAt} > NOW() - INTERVAL '1 day'`
+        )
+      );
+    if (reportDayCount >= REPORT_DAILY_LIMIT) {
+      res.status(429).json({ error: "You can submit up to 20 reports per day." });
+      return;
+    }
+
+    // Deduplicate: same user reporting same habit
     const [existing] = await db
       .select({ id: reportsTable.id })
       .from(reportsTable)
@@ -266,7 +281,6 @@ router.post("/habits/:id/report", optionalAuth, async (req, res): Promise<void> 
       reason: body.data.reason,
     });
   } catch {
-    // Unique constraint violation on sessionId — already reported anonymously
     res.status(409).json({ error: "Already reported" });
     return;
   }
@@ -280,6 +294,14 @@ router.post("/habits/:id/report", optionalAuth, async (req, res): Promise<void> 
     .set({ reportCount: newCount, flagged: nowFlagged || habit.flagged })
     .where(eq(habitsTable.id, params.data.id))
     .returning({ reportCount: habitsTable.reportCount, flagged: habitsTable.flagged });
+
+  // Moderation log: reported
+  await db.insert(moderationLogsTable).values({
+    habitId: params.data.id,
+    action: "reported",
+    actorUserId: reporterId,
+    note: body.data.reason,
+  });
 
   res.json(ReportHabitResponse.parse({
     reported: true,
@@ -305,7 +327,6 @@ router.get("/admin/flagged-habits", async (req, res): Promise<void> => {
     .where(eq(habitsTable.flagged, true))
     .orderBy(desc(habitsTable.reportCount));
 
-  // For each flagged habit, get per-reason counts
   const result = await Promise.all(
     flagged.map(async (h) => {
       const reasons = await db
@@ -352,17 +373,28 @@ router.patch("/admin/flagged-habits/:id", async (req, res): Promise<void> => {
   }
 
   if (body.data.action === "dismiss") {
-    // Clear flag + wipe all reports for this habit
     await db.delete(reportsTable).where(eq(reportsTable.habitId, params.data.id));
     await db
       .update(habitsTable)
       .set({ flagged: false, reportCount: 0 })
       .where(eq(habitsTable.id, params.data.id));
+
+    // Moderation log: dismissed
+    await db.insert(moderationLogsTable).values({
+      habitId: params.data.id,
+      action: "dismissed",
+    });
   } else if (body.data.action === "archive") {
     await db
       .update(habitsTable)
       .set({ status: "archived" })
       .where(eq(habitsTable.id, params.data.id));
+
+    // Moderation log: deleted (via archive)
+    await db.insert(moderationLogsTable).values({
+      habitId: params.data.id,
+      action: "deleted",
+    });
   }
 
   res.json({ ok: true });
@@ -428,6 +460,12 @@ router.delete("/admin/habits/:id", async (req, res): Promise<void> => {
     .set({ status: "archived" })
     .where(eq(habitsTable.id, params.data.id));
 
+  // Moderation log: deleted
+  await db.insert(moderationLogsTable).values({
+    habitId: params.data.id,
+    action: "deleted",
+  });
+
   res.json({ ok: true });
 });
 
@@ -482,6 +520,27 @@ router.patch("/admin/habits/:id", async (req, res): Promise<void> => {
     .groupBy(habitsTable.id);
 
   res.json(UpdateHabitResponse.parse({ ...row, meTooPct: Number(row.meTooPct), answerCount: Number(row.answerCount) }));
+});
+
+// ── Admin: moderation log ─────────────────────────────────────────────────────
+
+router.get("/admin/moderation-logs", async (req, res): Promise<void> => {
+  const rawHabitId = req.query.habitId;
+  const habitId = rawHabitId ? parseInt(String(rawHabitId), 10) : null;
+
+  const rows = habitId
+    ? await db
+        .select()
+        .from(moderationLogsTable)
+        .where(eq(moderationLogsTable.habitId, habitId))
+        .orderBy(desc(moderationLogsTable.createdAt))
+    : await db
+        .select()
+        .from(moderationLogsTable)
+        .orderBy(desc(moderationLogsTable.createdAt))
+        .limit(200);
+
+  res.json(rows);
 });
 
 export default router;

@@ -101,13 +101,19 @@ export default function SubmitScreen() {
   const { user } = useAuth();
   const [question, setQuestion] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [similarityWarning, setSimilarityWarning] = useState<string | null>(null);
   const [validationError, setValidationError] = useState("");
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
   const sessionId = getOrCreateSessionId();
 
   const createSubmission = useCreateSubmission({
-    mutation: { onSuccess: () => setSubmitted(true) },
+    mutation: {
+      onSuccess: (data) => {
+        setSimilarityWarning(data.similarityWarning ?? null);
+        setSubmitted(true);
+      },
+    },
   });
 
   const handleSubmit = () => {
@@ -254,6 +260,12 @@ export default function SubmitScreen() {
                   Your habit has been submitted for review. If approved, it'll appear in the feed for everyone to relate to.
                 </p>
               </div>
+
+              {similarityWarning && (
+                <div className="w-full bg-yellow-50 border border-yellow-200 rounded-2xl px-4 py-3 text-yellow-800 text-sm font-medium text-left">
+                  ⚠️ {similarityWarning}
+                </div>
+              )}
 
               <div className="w-full space-y-3">
                 <motion.button

@@ -1,10 +1,12 @@
 import { Router, type IRouter } from "express";
 import { db, answersTable, habitsTable } from "@workspace/db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, count, sql } from "drizzle-orm";
 import { RecordAnswerBody } from "@workspace/api-zod";
 import { optionalAuth, requireAuth } from "../middlewares/auth";
 
 const router: IRouter = Router();
+
+const VOTE_RATE_LIMIT = 20;
 
 router.get("/answers/voted", optionalAuth, requireAuth, async (req, res): Promise<void> => {
   const rows = await db
@@ -19,6 +21,23 @@ router.post("/answers", optionalAuth, requireAuth, async (req, res): Promise<voi
   const body = RecordAnswerBody.safeParse(req.body);
   if (!body.success) {
     res.status(400).json({ error: body.error.message });
+    return;
+  }
+
+  const userId = req.user!.userId;
+
+  // Rate limit: 20 votes per minute per user
+  const [{ voteCount }] = await db
+    .select({ voteCount: count() })
+    .from(answersTable)
+    .where(
+      and(
+        eq(answersTable.userId, userId),
+        sql`${answersTable.answeredAt} > NOW() - INTERVAL '1 minute'`
+      )
+    );
+  if (voteCount >= VOTE_RATE_LIMIT) {
+    res.status(429).json({ error: "Too many votes. Please wait a minute before voting again." });
     return;
   }
 
@@ -38,7 +57,7 @@ router.post("/answers", optionalAuth, requireAuth, async (req, res): Promise<voi
     .where(
       and(
         eq(answersTable.habitId, body.data.habitId),
-        eq(answersTable.userId, req.user!.userId),
+        eq(answersTable.userId, userId),
       ),
     );
 
@@ -53,7 +72,7 @@ router.post("/answers", optionalAuth, requireAuth, async (req, res): Promise<voi
       habitId: body.data.habitId,
       sessionId: body.data.sessionId,
       answer: body.data.answer,
-      userId: req.user!.userId,
+      userId,
     })
     .returning();
 

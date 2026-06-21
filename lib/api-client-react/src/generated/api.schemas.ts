@@ -136,6 +136,8 @@ export interface Submission {
   habitId?: number | null;
   /** @nullable */
   moderationReason?: string | null;
+  /** @nullable */
+  similarityWarning?: string | null;
 }
 
 export interface MySubmission {
@@ -201,6 +203,18 @@ export interface TraitScoreInput {
   maxScores: TraitScoreInputMaxScores;
 }
 
+export interface ModerationLog {
+  id: number;
+  /** @nullable */
+  habitId?: number | null;
+  action: string;
+  /** @nullable */
+  actorUserId?: number | null;
+  /** @nullable */
+  note?: string | null;
+  createdAt: string;
+}
+
 export type GetTrendingParams = {
 sessionId?: string;
 };
@@ -216,5 +230,9 @@ sessionId?: string;
 
 export type ListSubmissionsParams = {
 status?: string;
+};
+
+export type ListModerationLogsParams = {
+habitId?: number;
 };
 

@@ -211,7 +211,8 @@ export const ListSubmissionsResponseItem = zod.object({
   "status": zod.string(),
   "submittedAt": zod.coerce.date(),
   "habitId": zod.number().nullish(),
-  "moderationReason": zod.string().nullish()
+  "moderationReason": zod.string().nullish(),
+  "similarityWarning": zod.string().nullish()
 })
 export const ListSubmissionsResponse = zod.array(ListSubmissionsResponseItem)
 
@@ -236,7 +237,8 @@ export const UpdateSubmissionResponse = zod.object({
   "status": zod.string(),
   "submittedAt": zod.coerce.date(),
   "habitId": zod.number().nullish(),
-  "moderationReason": zod.string().nullish()
+  "moderationReason": zod.string().nullish(),
+  "similarityWarning": zod.string().nullish()
 })
 
 
@@ -353,6 +355,24 @@ export const UpdateHabitResponse = zod.object({
 export const DeleteHabitParams = zod.object({
   "id": zod.coerce.number()
 })
+
+
+/**
+ * @summary List moderation log entries (admin)
+ */
+export const ListModerationLogsQueryParams = zod.object({
+  "habitId": zod.coerce.number().optional()
+})
+
+export const ListModerationLogsResponseItem = zod.object({
+  "id": zod.number(),
+  "habitId": zod.number().nullish(),
+  "action": zod.string(),
+  "actorUserId": zod.number().nullish(),
+  "note": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})
+export const ListModerationLogsResponse = zod.array(ListModerationLogsResponseItem)
 
 
 /**

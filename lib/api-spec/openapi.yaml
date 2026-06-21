@@ -447,6 +447,27 @@ paths:
         "404":
           description: Not found
 
+  /admin/moderation-logs:
+    get:
+      operationId: listModerationLogs
+      tags: [admin]
+      summary: List moderation log entries (admin)
+      parameters:
+        - in: query
+          name: habitId
+          schema:
+            type: integer
+          required: false
+      responses:
+        "200":
+          description: List of moderation log entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ModerationLog"
+
   /trait-scores/{sessionId}:
     get:
       operationId: getTraitScores
@@ -739,6 +760,8 @@ components:
           type: ["integer", "null"]
         moderationReason:
           type: ["string", "null"]
+        similarityWarning:
+          type: ["string", "null"]
 
     MySubmission:
       type: object
@@ -839,3 +862,21 @@ components:
           type: object
           additionalProperties:
             type: number
+
+    ModerationLog:
+      type: object
+      required: [id, action, createdAt]
+      properties:
+        id:
+          type: integer
+        habitId:
+          type: ["integer", "null"]
+        action:
+          type: string
+        actorUserId:
+          type: ["integer", "null"]
+        note:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time

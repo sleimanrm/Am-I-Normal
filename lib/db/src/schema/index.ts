@@ -4,3 +4,4 @@ export * from "./answers";
 export * from "./traitScores";
 export * from "./reports";
 export * from "./users";
+export * from "./moderationLogs";

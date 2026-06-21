@@ -1,2 +1,3 @@
 - [Orval schema naming conflict](orval-schema-naming.md) — component schemas ending in "Body" clash in lib/api-zod because orval generates the same name in both api.ts (Zod) and types/ (TS interface); rename schemas to end in "Input" instead.
 - [Auth stack](auth-stack.md) — JWT+bcryptjs auth; JWT_SECRET env var; setAuthTokenGetter in lib/api-client-react for automatic header injection; AuthProvider wraps app in main.tsx.
+- [Content quality protections](content-quality.md) — rate limits, fuzzy dup detection via pg_trgm, moderation_logs table; all enforced server-side.

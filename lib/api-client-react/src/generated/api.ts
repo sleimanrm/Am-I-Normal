@@ -36,8 +36,10 @@ import type {
   Habit,
   HabitUpdate,
   HealthStatus,
+  ListModerationLogsParams,
   ListSubmissionsParams,
   LoginInput,
+  ModerationLog,
   MySubmission,
   ReportInput,
   ReportResult,
@@ -1650,6 +1652,90 @@ export const useDeleteHabit = <TError = ErrorType<void>,
       > => {
       return useMutation(getDeleteHabitMutationOptions(options));
     }
+
+export const getListModerationLogsUrl = (params?: ListModerationLogsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/moderation-logs?${stringifiedParams}` : `/api/admin/moderation-logs`
+}
+
+/**
+ * @summary List moderation log entries (admin)
+ */
+export const listModerationLogs = async (params?: ListModerationLogsParams, options?: RequestInit): Promise<ModerationLog[]> => {
+
+  return customFetch<ModerationLog[]>(getListModerationLogsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListModerationLogsQueryKey = (params?: ListModerationLogsParams,) => {
+    return [
+    `/api/admin/moderation-logs`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListModerationLogsQueryOptions = <TData = Awaited<ReturnType<typeof listModerationLogs>>, TError = ErrorType<unknown>>(params?: ListModerationLogsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listModerationLogs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListModerationLogsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listModerationLogs>>> = ({ signal }) => listModerationLogs(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listModerationLogs>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListModerationLogsQueryResult = NonNullable<Awaited<ReturnType<typeof listModerationLogs>>>
+export type ListModerationLogsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List moderation log entries (admin)
+ */
+
+export function useListModerationLogs<TData = Awaited<ReturnType<typeof listModerationLogs>>, TError = ErrorType<unknown>>(
+ params?: ListModerationLogsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listModerationLogs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListModerationLogsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getGetTraitScoresUrl = (sessionId: string,) => {
 

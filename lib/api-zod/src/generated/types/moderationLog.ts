@@ -6,15 +6,14 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface Submission {
+export interface ModerationLog {
   id: number;
-  question: string;
-  status: string;
-  submittedAt: Date;
   /** @nullable */
   habitId?: number | null;
+  action: string;
   /** @nullable */
-  moderationReason?: string | null;
+  actorUserId?: number | null;
   /** @nullable */
-  similarityWarning?: string | null;
+  note?: string | null;
+  createdAt: Date;
 }
