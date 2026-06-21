@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Check, X, Clock, ShieldCheck, Pencil, Save, ChevronDown, ChevronUp,
   BookOpen, AlertCircle, Flag, Trash2, CheckCircle2, Lock, Delete,
-  LayoutList, BarChart2,
+  LayoutList, BarChart2, Upload, ChevronRight,
 } from "lucide-react";
 import {
   useListSubmissions,
@@ -32,6 +32,41 @@ interface AdminAnalytics {
   reportsToday: number;
   topCategories: { category: string; count: number }[];
   mostVotedHabits: { id: number; question: string; answerCount: number; meTooPct: number }[];
+}
+
+// ── Import types & parser ─────────────────────────────────────────────────────
+
+interface ParsedHabit {
+  raw: string;
+  category: string;
+  question: string;
+  valid: boolean;
+  error?: string;
+}
+
+interface ImportResult {
+  imported: number;
+  skipped: number;
+  skippedQuestions: string[];
+}
+
+function parseImportText(text: string): ParsedHabit[] {
+  return text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith("#"))
+    .map((line) => {
+      const pipeIdx = line.indexOf("|");
+      if (pipeIdx === -1) {
+        return { raw: line, category: "", question: "", valid: false, error: "Missing | separator" };
+      }
+      const category = line.slice(0, pipeIdx).trim();
+      const question = line.slice(pipeIdx + 1).trim();
+      if (!category) return { raw: line, category, question, valid: false, error: "Empty category" };
+      if (!question) return { raw: line, category, question, valid: false, error: "Empty question" };
+      if (question.length < 5) return { raw: line, category, question, valid: false, error: "Question too short" };
+      return { raw: line, category, question, valid: true };
+    });
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -705,6 +740,39 @@ function AdminDashboard({ onLock }: { onLock: () => void }) {
   const visibleSubmissions =
     activeFilter === "pending" ? pending : activeFilter === "approved" ? approved : rejected;
 
+  // ── Import state ─────────────────────────────────────────────────────────
+  const [showImport, setShowImport] = useState(false);
+  const [importText, setImportText] = useState("");
+  const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+
+  const parsedHabits = parseImportText(importText);
+  const validHabits = parsedHabits.filter((h) => h.valid);
+
+  const handleImport = async () => {
+    if (validHabits.length === 0) return;
+    setIsImporting(true);
+    setImportResult(null);
+    try {
+      const token = sessionStorage.getItem(SESSION_KEY) ?? "";
+      const res = await fetch("/api/admin/habits/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Admin-Token": token },
+        body: JSON.stringify({ habits: validHabits.map((h) => ({ question: h.question, category: h.category })) }),
+      });
+      const data = await res.json() as ImportResult;
+      setImportResult(data);
+      if (data.imported > 0) {
+        queryClient.invalidateQueries({ queryKey: getListAdminHabitsQueryKey() });
+        setImportText("");
+      }
+    } catch {
+      setImportResult({ imported: 0, skipped: 0, skippedQuestions: [] });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   // ── Habits ───────────────────────────────────────────────────────────────
   const { data: allHabits = [], isLoading: habitsLoading } = useListAdminHabits();
 
@@ -865,6 +933,116 @@ function AdminDashboard({ onLock }: { onLock: () => void }) {
         {/* ── Habits tab ── */}
         {mainTab === "habits" && (
           <>
+            {/* ── Import toggle button ── */}
+            <button
+              onClick={() => { setShowImport((v) => !v); setImportResult(null); }}
+              className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl mb-3 text-sm font-bold transition-all border ${
+                showImport
+                  ? "bg-white/15 border-white/30 text-white"
+                  : "bg-white/10 border-white/15 text-white/70 hover:text-white hover:bg-white/15"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Upload className="w-4 h-4" />
+                Import Habits
+              </div>
+              <ChevronRight className={`w-4 h-4 transition-transform ${showImport ? "rotate-90" : ""}`} />
+            </button>
+
+            {/* ── Import panel ── */}
+            <AnimatePresence>
+              {showImport && (
+                <motion.div
+                  key="import-panel"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden mb-4"
+                >
+                  <div className="bg-white/10 rounded-2xl p-4 border border-white/15 space-y-4">
+
+                    {/* Format hint */}
+                    <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+                      <p className="text-white/50 text-[10px] font-semibold uppercase tracking-wide mb-1.5">Format — one habit per line</p>
+                      <code className="text-white/70 text-xs font-mono block leading-relaxed">
+                        {"Food | Do you eat cereal without milk?"}<br />
+                        {"Sleep | Do you sleep with the TV on?"}<br />
+                        {"# Lines starting with # are ignored"}
+                      </code>
+                    </div>
+
+                    {/* Textarea */}
+                    <textarea
+                      value={importText}
+                      onChange={(e) => { setImportText(e.target.value); setImportResult(null); }}
+                      placeholder={"Category | Habit question\nCategory | Another habit"}
+                      rows={8}
+                      className="w-full bg-white/5 border border-white/15 rounded-xl p-3 text-white text-xs font-mono placeholder:text-white/25 resize-none focus:outline-none focus:border-white/40 leading-relaxed"
+                    />
+
+                    {/* Live parse preview */}
+                    {parsedHabits.length > 0 && (
+                      <div className="space-y-1 max-h-48 overflow-y-auto">
+                        <p className="text-white/40 text-[10px] font-semibold uppercase tracking-wide">
+                          Preview — {validHabits.length} valid · {parsedHabits.length - validHabits.length} invalid
+                        </p>
+                        {parsedHabits.map((h, i) => (
+                          <div key={i} className={`flex items-start gap-2 px-3 py-2 rounded-xl text-xs ${
+                            h.valid ? "bg-green-500/10 border border-green-500/20" : "bg-red-500/10 border border-red-500/20"
+                          }`}>
+                            <span className={`mt-0.5 flex-shrink-0 ${h.valid ? "text-green-400" : "text-red-400"}`}>
+                              {h.valid ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+                            </span>
+                            {h.valid ? (
+                              <span className="text-white/80 leading-snug">
+                                <span className="text-white/40">{h.category}</span>
+                                <span className="text-white/25 mx-1">|</span>
+                                {h.question}
+                              </span>
+                            ) : (
+                              <span className="text-red-300/70 leading-snug">
+                                {h.raw || "(empty)"} <span className="text-red-400/60">— {h.error}</span>
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Import result */}
+                    {importResult && (
+                      <div className={`rounded-xl px-4 py-3 text-sm font-semibold ${
+                        importResult.imported > 0 ? "bg-green-500/15 border border-green-500/25 text-green-300" : "bg-white/10 border border-white/15 text-white/60"
+                      }`}>
+                        {importResult.imported > 0
+                          ? `✓ Imported ${importResult.imported} habit${importResult.imported !== 1 ? "s" : ""}`
+                          : "Nothing new to import"}
+                        {importResult.skipped > 0 && (
+                          <span className="text-white/40 text-xs font-normal ml-2">({importResult.skipped} duplicate{importResult.skipped !== 1 ? "s" : ""} skipped)</span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Import button */}
+                    <button
+                      onClick={handleImport}
+                      disabled={validHabits.length === 0 || isImporting}
+                      className="w-full py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed bg-white text-purple-900 hover:bg-white/90 active:scale-[0.98]"
+                    >
+                      {isImporting ? (
+                        <div className="w-4 h-4 border-2 border-purple-900/30 border-t-purple-900 rounded-full animate-spin" />
+                      ) : (
+                        <Upload className="w-4 h-4" />
+                      )}
+                      {isImporting ? "Importing…" : `Import ${validHabits.length} Habit${validHabits.length !== 1 ? "s" : ""}`}
+                    </button>
+
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* Filter pills */}
             <div className="flex bg-white/10 rounded-xl p-1 mb-4 gap-1">
               {([

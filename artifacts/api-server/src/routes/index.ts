@@ -7,12 +7,14 @@ import traitScoresRouter from "./traitScores";
 import adminRouter from "./admin";
 import authRouter from "./auth";
 import analyticsRouter from "./analytics";
+import importRouter from "./import";
 
 const router: IRouter = Router();
 
 router.use(authRouter);
 router.use(adminRouter);
 router.use(analyticsRouter);
+router.use(importRouter);
 router.use(healthRouter);
 router.use(habitsRouter);
 router.use(answersRouter);
