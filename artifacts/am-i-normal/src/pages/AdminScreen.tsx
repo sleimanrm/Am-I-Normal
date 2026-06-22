@@ -702,10 +702,24 @@ type HabitFilter = "all" | "curated" | "community";
 export default function AdminScreen() {
   const isAuthed = !!sessionStorage.getItem(SESSION_KEY);
   const [authed, setAuthed] = useState(isAuthed);
+  // Incremented on every successful auth so AdminDashboard remounts with a
+  // clean React Query cache — this handles the stale/expired-token case where
+  // authed was already true but all queries had failed with 401.
+  const [authNonce, setAuthNonce] = useState(0);
 
-  if (!authed) return <PinGate onAuth={() => setAuthed(true)} />;
+  const handleAuth = () => {
+    setAuthed(true);
+    setAuthNonce((n) => n + 1);
+  };
 
-  return <AdminDashboard onLock={() => { sessionStorage.removeItem(SESSION_KEY); setAuthed(false); }} />;
+  const handleLock = () => {
+    sessionStorage.removeItem(SESSION_KEY);
+    setAuthed(false);
+  };
+
+  if (!authed) return <PinGate onAuth={handleAuth} />;
+
+  return <AdminDashboard key={authNonce} onLock={handleLock} />;
 }
 
 function AdminDashboard({ onLock }: { onLock: () => void }) {
@@ -744,6 +758,7 @@ function AdminDashboard({ onLock }: { onLock: () => void }) {
   const [showImport, setShowImport] = useState(false);
   const [importText, setImportText] = useState("");
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
   const [isImporting, setIsImporting] = useState(false);
 
   const parsedHabits = parseImportText(importText);
@@ -753,6 +768,7 @@ function AdminDashboard({ onLock }: { onLock: () => void }) {
     if (validHabits.length === 0) return;
     setIsImporting(true);
     setImportResult(null);
+    setImportError(null);
     try {
       const token = sessionStorage.getItem(SESSION_KEY) ?? "";
       const res = await fetch("/api/admin/habits/import", {
@@ -760,14 +776,23 @@ function AdminDashboard({ onLock }: { onLock: () => void }) {
         headers: { "Content-Type": "application/json", "X-Admin-Token": token },
         body: JSON.stringify({ habits: validHabits.map((h) => ({ question: h.question, category: h.category })) }),
       });
+      if (res.status === 401) {
+        setImportError("Session expired — please re-authenticate.");
+        return;
+      }
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({})) as { error?: string };
+        setImportError(err.error ?? `Server error (${res.status})`);
+        return;
+      }
       const data = await res.json() as ImportResult;
       setImportResult(data);
       if (data.imported > 0) {
         queryClient.invalidateQueries({ queryKey: getListAdminHabitsQueryKey() });
         setImportText("");
       }
-    } catch {
-      setImportResult({ imported: 0, skipped: 0, skippedQuestions: [] });
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : "Network error — could not reach server.");
     } finally {
       setIsImporting(false);
     }
@@ -935,7 +960,7 @@ function AdminDashboard({ onLock }: { onLock: () => void }) {
           <>
             {/* ── Import toggle button ── */}
             <button
-              onClick={() => { setShowImport((v) => !v); setImportResult(null); }}
+              onClick={() => { setShowImport((v) => !v); setImportResult(null); setImportError(null); }}
               className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl mb-3 text-sm font-bold transition-all border ${
                 showImport
                   ? "bg-white/15 border-white/30 text-white"
@@ -975,7 +1000,7 @@ function AdminDashboard({ onLock }: { onLock: () => void }) {
                     {/* Textarea */}
                     <textarea
                       value={importText}
-                      onChange={(e) => { setImportText(e.target.value); setImportResult(null); }}
+                      onChange={(e) => { setImportText(e.target.value); setImportResult(null); setImportError(null); }}
                       placeholder={"Category | Habit question\nCategory | Another habit"}
                       rows={8}
                       className="w-full bg-white/5 border border-white/15 rounded-xl p-3 text-white text-xs font-mono placeholder:text-white/25 resize-none focus:outline-none focus:border-white/40 leading-relaxed"
@@ -1007,6 +1032,14 @@ function AdminDashboard({ onLock }: { onLock: () => void }) {
                             )}
                           </div>
                         ))}
+                      </div>
+                    )}
+
+                    {/* Import error */}
+                    {importError && (
+                      <div className="rounded-xl px-4 py-3 text-sm font-semibold bg-red-500/15 border border-red-500/25 text-red-300 flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                        {importError}
                       </div>
                     )}
 
