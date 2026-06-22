@@ -1,11 +1,19 @@
 import { Router, type IRouter } from "express";
 import { db, habitsTable, moderationLogsTable } from "@workspace/db";
-import { eq, sql } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
 const MAX_BATCH = 200;
+
+export const VALID_CATEGORIES = new Set([
+  "Food",
+  "Sleep",
+  "Technology",
+  "Social",
+  "Body",
+  "Overthinking",
+]);
 
 interface ImportItem {
   question: string;
@@ -24,7 +32,7 @@ router.post("/admin/habits/import", requireAdmin, async (req, res): Promise<void
     return;
   }
 
-  // Validate each item
+  // Validate each item's shape
   const validated: ImportItem[] = [];
   for (let i = 0; i < body.habits.length; i++) {
     const item = body.habits[i] as Record<string, unknown>;
@@ -42,6 +50,18 @@ router.post("/admin/habits/import", requireAdmin, async (req, res): Promise<void
     });
   }
 
+  // Reject unknown categories — never create new ones
+  const skippedUnknownCategory: { question: string; category: string }[] = [];
+  const categoryValidated: ImportItem[] = [];
+
+  for (const item of validated) {
+    if (!VALID_CATEGORIES.has(item.category)) {
+      skippedUnknownCategory.push({ question: item.question, category: item.category });
+    } else {
+      categoryValidated.push(item);
+    }
+  }
+
   // Fetch all existing habit questions in one query for duplicate detection
   const existingRows = await db
     .select({ question: habitsTable.question })
@@ -52,7 +72,7 @@ router.post("/admin/habits/import", requireAdmin, async (req, res): Promise<void
   const toInsert: ImportItem[] = [];
   const skippedQuestions: string[] = [];
 
-  for (const item of validated) {
+  for (const item of categoryValidated) {
     if (existingSet.has(item.question.toLowerCase())) {
       skippedQuestions.push(item.question);
     } else {
@@ -62,7 +82,7 @@ router.post("/admin/habits/import", requireAdmin, async (req, res): Promise<void
     }
   }
 
-  // Bulk insert all non-duplicate habits in a single query
+  // Bulk insert all valid, non-duplicate habits in a single query
   let importedCount = 0;
   if (toInsert.length > 0) {
     const inserted = await db
@@ -81,7 +101,6 @@ router.post("/admin/habits/import", requireAdmin, async (req, res): Promise<void
 
     importedCount = inserted.length;
 
-    // Log a single bulk-import moderation entry
     await db.insert(moderationLogsTable).values({
       habitId: null,
       action: "imported",
@@ -93,6 +112,7 @@ router.post("/admin/habits/import", requireAdmin, async (req, res): Promise<void
     imported: importedCount,
     skipped: skippedQuestions.length,
     skippedQuestions,
+    skippedUnknownCategory,
   });
 });
 

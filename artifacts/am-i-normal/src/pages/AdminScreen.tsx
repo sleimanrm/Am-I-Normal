@@ -44,10 +44,20 @@ interface ParsedHabit {
   error?: string;
 }
 
+const VALID_CATEGORIES = new Set([
+  "Food",
+  "Sleep",
+  "Technology",
+  "Social",
+  "Body",
+  "Overthinking",
+]);
+
 interface ImportResult {
   imported: number;
   skipped: number;
   skippedQuestions: string[];
+  skippedUnknownCategory: { question: string; category: string }[];
 }
 
 function parseImportText(text: string): ParsedHabit[] {
@@ -65,6 +75,9 @@ function parseImportText(text: string): ParsedHabit[] {
       if (!category) return { raw: line, category, question, valid: false, error: "Empty category" };
       if (!question) return { raw: line, category, question, valid: false, error: "Empty question" };
       if (question.length < 5) return { raw: line, category, question, valid: false, error: "Question too short" };
+      if (!VALID_CATEGORIES.has(category)) {
+        return { raw: line, category, question, valid: false, error: `Unknown category: ${category}` };
+      }
       return { raw: line, category, question, valid: true };
     });
 }
@@ -988,13 +1001,19 @@ function AdminDashboard({ onLock }: { onLock: () => void }) {
                   <div className="bg-white/10 rounded-2xl p-4 border border-white/15 space-y-4">
 
                     {/* Format hint */}
-                    <div className="bg-white/5 rounded-xl p-3 border border-white/10">
-                      <p className="text-white/50 text-[10px] font-semibold uppercase tracking-wide mb-1.5">Format — one habit per line</p>
+                    <div className="bg-white/5 rounded-xl p-3 border border-white/10 space-y-2">
+                      <p className="text-white/50 text-[10px] font-semibold uppercase tracking-wide">Format — one habit per line</p>
                       <code className="text-white/70 text-xs font-mono block leading-relaxed">
                         {"Food | Do you eat cereal without milk?"}<br />
                         {"Sleep | Do you sleep with the TV on?"}<br />
                         {"# Lines starting with # are ignored"}
                       </code>
+                      <p className="text-white/40 text-[10px] font-semibold uppercase tracking-wide pt-1">Valid categories</p>
+                      <div className="flex flex-wrap gap-1">
+                        {Array.from(VALID_CATEGORIES).map((cat) => (
+                          <span key={cat} className="px-2 py-0.5 rounded-full bg-white/10 text-white/60 text-[10px] font-semibold">{cat}</span>
+                        ))}
+                      </div>
                     </div>
 
                     {/* Textarea */}
@@ -1045,14 +1064,29 @@ function AdminDashboard({ onLock }: { onLock: () => void }) {
 
                     {/* Import result */}
                     {importResult && (
-                      <div className={`rounded-xl px-4 py-3 text-sm font-semibold ${
-                        importResult.imported > 0 ? "bg-green-500/15 border border-green-500/25 text-green-300" : "bg-white/10 border border-white/15 text-white/60"
-                      }`}>
-                        {importResult.imported > 0
-                          ? `✓ Imported ${importResult.imported} habit${importResult.imported !== 1 ? "s" : ""}`
-                          : "Nothing new to import"}
-                        {importResult.skipped > 0 && (
-                          <span className="text-white/40 text-xs font-normal ml-2">({importResult.skipped} duplicate{importResult.skipped !== 1 ? "s" : ""} skipped)</span>
+                      <div className="space-y-2">
+                        <div className={`rounded-xl px-4 py-3 text-sm font-semibold ${
+                          importResult.imported > 0 ? "bg-green-500/15 border border-green-500/25 text-green-300" : "bg-white/10 border border-white/15 text-white/60"
+                        }`}>
+                          {importResult.imported > 0
+                            ? `✓ Imported ${importResult.imported} habit${importResult.imported !== 1 ? "s" : ""}`
+                            : "Nothing new to import"}
+                          {importResult.skipped > 0 && (
+                            <span className="text-white/40 text-xs font-normal ml-2">({importResult.skipped} duplicate{importResult.skipped !== 1 ? "s" : ""} skipped)</span>
+                          )}
+                        </div>
+                        {importResult.skippedUnknownCategory.length > 0 && (
+                          <div className="rounded-xl px-4 py-3 bg-amber-500/10 border border-amber-500/20 space-y-1.5">
+                            <p className="text-amber-300 text-xs font-bold">
+                              {importResult.skippedUnknownCategory.length} habit{importResult.skippedUnknownCategory.length !== 1 ? "s" : ""} skipped — unknown category
+                            </p>
+                            {importResult.skippedUnknownCategory.map((h, i) => (
+                              <p key={i} className="text-amber-200/60 text-xs font-mono leading-snug">
+                                Unknown category: <span className="text-amber-300 font-bold">{h.category}</span>
+                                <span className="text-amber-200/40 ml-2">→ {h.question}</span>
+                              </p>
+                            ))}
+                          </div>
                         )}
                       </div>
                     )}
