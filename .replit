@@ -39,3 +39,8 @@ channel = "stable-25_05"
 [userenv.shared]
 ADMIN_PIN = "0000"
 JWT_SECRET = "ain_jwt_1782034666603_ezlt8rz9ez238gshrrrqe"
+SMTP_HOST = "smtp.gmail.com"
+SMTP_PORT = "465"
+SMTP_SECURE = "true"
+SMTP_FROM_EMAIL = "aminormal.app@gmail.com"
+APP_BASE_URL = "https://3dfc9b95-3590-4cc5-8e17-1623d698b847-00-2nq02h35083am.janeway.replit.dev/"
