@@ -84,6 +84,25 @@ export interface LoginInput {
   password: string;
 }
 
+export interface PasswordResetRequestInput {
+  email: string;
+}
+
+export interface PasswordResetConfirmInput {
+  /** @minLength 1 */
+  token: string;
+  /** @minLength 6 */
+  password: string;
+}
+
+export interface PasswordResetMessage {
+  message: string;
+}
+
+export interface PasswordResetValidation {
+  valid: boolean;
+}
+
 export interface AuthUser {
   id: number;
   email: string;
@@ -222,6 +241,10 @@ sessionId?: string;
 export type GetHabitsByCategoryParams = {
 category: string;
 sessionId?: string;
+};
+
+export type ValidatePasswordResetParams = {
+token: string;
 };
 
 export type GetMySubmissionsParams = {

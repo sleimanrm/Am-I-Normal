@@ -5,3 +5,4 @@ export * from "./traitScores";
 export * from "./reports";
 export * from "./users";
 export * from "./moderationLogs";
+export * from "./passwordResetTokens";

@@ -138,6 +138,48 @@ export const LoginResponse = zod.object({
 
 
 /**
+ * @summary Request a password reset email
+ */
+export const RequestPasswordResetBody = zod.object({
+  "email": zod.string().email()
+})
+
+export const RequestPasswordResetResponse = zod.object({
+  "message": zod.string()
+})
+
+
+/**
+ * @summary Check whether a password reset link is still valid
+ */
+export const ValidatePasswordResetQueryParams = zod.object({
+  "token": zod.coerce.string()
+})
+
+export const ValidatePasswordResetResponse = zod.object({
+  "valid": zod.boolean()
+})
+
+
+/**
+ * @summary Set a new password using a reset token
+ */
+
+export const confirmPasswordResetBodyPasswordMin = 6;
+
+
+
+export const ConfirmPasswordResetBody = zod.object({
+  "token": zod.string().min(1),
+  "password": zod.string().min(confirmPasswordResetBodyPasswordMin)
+})
+
+export const ConfirmPasswordResetResponse = zod.object({
+  "message": zod.string()
+})
+
+
+/**
  * @summary Get the currently authenticated user
  */
 export const GetMeResponse = zod.object({

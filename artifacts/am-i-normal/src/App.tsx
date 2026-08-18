@@ -9,6 +9,8 @@ import CategoriesScreen from "./pages/CategoriesScreen";
 import CategoryFeedScreen from "./pages/CategoryFeedScreen";
 import LoginScreen from "./pages/LoginScreen";
 import SignupScreen from "./pages/SignupScreen";
+import ForgotPasswordScreen from "./pages/ForgotPasswordScreen";
+import ResetPasswordScreen from "./pages/ResetPasswordScreen";
 
 export default function App() {
   return (
@@ -16,6 +18,8 @@ export default function App() {
       <Route path="/admin" component={AdminScreen} />
       <Route path="/login" component={LoginScreen} />
       <Route path="/signup" component={SignupScreen} />
+      <Route path="/forgot-password" component={ForgotPasswordScreen} />
+      <Route path="/reset-password" component={ResetPasswordScreen} />
       <Route path="/submit" component={SubmitScreen} />
       <Route path="/my-habits/:id" component={HabitDetailScreen} />
       <Route path="/my-habits" component={MyHabitsScreen} />

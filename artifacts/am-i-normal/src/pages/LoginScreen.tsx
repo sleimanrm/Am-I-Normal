@@ -87,6 +87,17 @@ export default function LoginScreen() {
                 />
               </div>
 
+              <div className="flex justify-end -mt-1">
+                <button
+                  type="button"
+                  onClick={() => navigate("/forgot-password")}
+                  data-testid="link-forgot-password"
+                  className="text-primary text-sm font-bold hover:underline focus:outline-none focus:ring-2 focus:ring-primary/40 rounded"
+                >
+                  Forgot password?
+                </button>
+              </div>
+
               {error && (
                 <p className="text-red-600 text-sm font-semibold bg-red-50 px-4 py-2.5 rounded-xl">
                   {error}
