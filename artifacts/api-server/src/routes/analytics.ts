@@ -1,5 +1,12 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable, habitsTable, answersTable, reportsTable } from "@workspace/db";
+import {
+  db,
+  usersTable,
+  habitsTable,
+  answersTable,
+  reportsTable,
+  submissionsTable,
+} from "@workspace/db";
 import { eq, sql, count, desc } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/auth";
 
@@ -8,6 +15,7 @@ const router: IRouter = Router();
 router.get("/admin/analytics", requireAdmin, async (_req, res): Promise<void> => {
   const [
     totalUsersResult,
+    newUsersTodayResult,
     dailyActiveResult,
     totalHabitsResult,
     habitsTodayResult,
@@ -19,6 +27,15 @@ router.get("/admin/analytics", requireAdmin, async (_req, res): Promise<void> =>
     // Total registered users
     db.select({ count: count() }).from(usersTable),
 
+    // Accounts created during the database's current calendar day
+    db
+      .select({ count: count() })
+      .from(usersTable)
+      .where(
+        sql`${usersTable.createdAt} >= CURRENT_DATE
+            AND ${usersTable.createdAt} < CURRENT_DATE + INTERVAL '1 day'`,
+      ),
+
     // Daily active sessions (distinct sessionIds with a vote in last 24 h)
     db
       .select({ count: sql<string>`COUNT(DISTINCT ${answersTable.sessionId})` })
@@ -28,11 +45,15 @@ router.get("/admin/analytics", requireAdmin, async (_req, res): Promise<void> =>
     // Total active habits
     db.select({ count: count() }).from(habitsTable).where(eq(habitsTable.status, "active")),
 
-    // Habits created today
+    // User habit submissions made during the database's current calendar day
     db
       .select({ count: count() })
-      .from(habitsTable)
-      .where(sql`${habitsTable.createdAt} > NOW() - INTERVAL '1 day'`),
+      .from(submissionsTable)
+      .where(
+        sql`${submissionsTable.submitterUserId} IS NOT NULL
+            AND ${submissionsTable.submittedAt} >= CURRENT_DATE
+            AND ${submissionsTable.submittedAt} < CURRENT_DATE + INTERVAL '1 day'`,
+      ),
 
     // Votes cast today
     db
@@ -78,6 +99,7 @@ router.get("/admin/analytics", requireAdmin, async (_req, res): Promise<void> =>
 
   res.json({
     totalUsers: Number(totalUsersResult[0].count),
+    newUsersToday: Number(newUsersTodayResult[0].count),
     dailyActiveUsers: Number(dailyActiveResult[0].count),
     totalHabits: Number(totalHabitsResult[0].count),
     habitsToday: Number(habitsTodayResult[0].count),

@@ -25,6 +25,7 @@ import { useQueryClient, useQuery } from "@tanstack/react-query";
 
 interface AdminAnalytics {
   totalUsers: number;
+  newUsersToday: number;
   dailyActiveUsers: number;
   totalHabits: number;
   habitsToday: number;
@@ -1205,6 +1206,7 @@ function AdminDashboard({ onLock }: { onLock: () => void }) {
                 <div className="grid grid-cols-2 gap-2">
                   {[
                     { label: "Total Users", value: analytics.totalUsers, color: "text-violet-300", dot: "bg-violet-400" },
+                    { label: "New Users Today", value: analytics.newUsersToday, color: "text-fuchsia-300", dot: "bg-fuchsia-400" },
                     { label: "Active Today", value: analytics.dailyActiveUsers, color: "text-sky-300", dot: "bg-sky-400" },
                     { label: "Total Habits", value: analytics.totalHabits, color: "text-emerald-300", dot: "bg-emerald-400" },
                     { label: "Habits Today", value: analytics.habitsToday, color: "text-teal-300", dot: "bg-teal-400" },
