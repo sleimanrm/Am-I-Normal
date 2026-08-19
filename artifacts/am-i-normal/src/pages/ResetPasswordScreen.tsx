@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { motion } from "framer-motion";
 import { AlertCircle, ArrowLeft, CheckCircle2, KeyRound, Sparkles } from "lucide-react";
 import {
@@ -9,8 +9,9 @@ import {
 } from "@workspace/api-client-react";
 
 export default function ResetPasswordScreen() {
-  const [location, navigate] = useLocation();
-  const token = new URLSearchParams(location.split("?")[1] ?? "").get("token") ?? "";
+  const [, navigate] = useLocation();
+  const search = useSearch();
+  const token = new URLSearchParams(search).get("token") ?? "";
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
   const [formError, setFormError] = useState<string | null>(null);

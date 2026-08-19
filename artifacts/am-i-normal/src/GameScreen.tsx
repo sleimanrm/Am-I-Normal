@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from "framer-motion";
 import { Check, X, ArrowRight, Sparkles, Flame, Brain, Plus, ClipboardList, Flag, TrendingUp, LayoutGrid, LogOut, User } from "lucide-react";
 import { useLocation } from "wouter";
@@ -85,27 +85,6 @@ function AnimatedCounter({ target, duration = REVEAL_DURATION }: { target: numbe
     requestAnimationFrame(tick);
   }, [target, duration]);
   return <span>{value}</span>;
-}
-
-// ── Countdown progress bar ────────────────────────────────────────────────────
-
-function CountdownBar({ duration, instanceKey }: { duration: number; instanceKey: string }) {
-  const [progress, setProgress] = useState(0);
-  useEffect(() => {
-    setProgress(0);
-    const start = performance.now();
-    const tick = (now: number) => {
-      const p = Math.min((now - start) / duration, 1);
-      setProgress(p);
-      if (p < 1) requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-  }, [duration, instanceKey]);
-  return (
-    <div className="w-full h-1.5 bg-purple-100 rounded-full overflow-hidden">
-      <div className="h-full bg-primary rounded-full transition-none" style={{ width: `${progress * 100}%` }} />
-    </div>
-  );
 }
 
 // ── Animated trait bar ────────────────────────────────────────────────────────
@@ -419,13 +398,6 @@ export default function GameScreen() {
     setView(streak >= PROFILE_UNLOCK_AT ? "profile" : "question");
   };
 
-  const autoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => {
-    if (view !== "result") return;
-    autoTimer.current = setTimeout(handleNext, REVEAL_DURATION + 600);
-    return () => { if (autoTimer.current) clearTimeout(autoTimer.current); };
-  }, [view, queueIndex]);
-
   const resultMessage = userAnswer && current ? getResultMessage(current.meTooPct, userAnswer) : "";
   const topTraits = calculateProfile(traitScores, traitMax, 5);
   const topTrait: Trait = topTraits[0]?.trait ?? "Observer";
@@ -585,7 +557,6 @@ export default function GameScreen() {
                 )}
 
                 <div className="z-10 space-y-3">
-                  <CountdownBar duration={REVEAL_DURATION} instanceKey={`bar-${queueIndex}`} />
                   <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.96 }}
                     onClick={handleNext}
                     className="w-full bg-card-foreground text-white font-bold text-lg py-4 rounded-full shadow-lg flex items-center justify-center gap-2">
