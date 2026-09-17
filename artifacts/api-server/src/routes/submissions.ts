@@ -18,6 +18,14 @@ const SUBMISSION_DAILY_LIMIT = 5;
 const SIMILARITY_THRESHOLD = 0.6;
 const VALID_SUBMISSION_STATUSES = ["pending", "approved", "rejected"] as const;
 
+function normalizeHabitQuestion(question: string): string {
+  const normalized = question.trim().replace(/\s+/g, " ");
+  const withoutTrailingPunctuation = normalized.replace(/\p{P}+$/gu, "");
+  if (!withoutTrailingPunctuation) return ".";
+
+  return `${withoutTrailingPunctuation.charAt(0).toUpperCase()}${withoutTrailingPunctuation.slice(1)}.`;
+}
+
 router.post("/submissions", optionalAuth, requireAuth, async (req, res): Promise<void> => {
   const body = CreateSubmissionBody.safeParse(req.body);
   if (!body.success) {
@@ -26,7 +34,8 @@ router.post("/submissions", optionalAuth, requireAuth, async (req, res): Promise
   }
 
   const userId = req.user!.userId;
-  const normalised = body.data.question.trim().toLowerCase();
+  const normalizedQuestion = normalizeHabitQuestion(body.data.question);
+  const normalised = normalizedQuestion.toLowerCase();
 
   // Rate limit: 5 submissions per user per day
   const [{ dailyCount }] = await db
@@ -85,7 +94,7 @@ router.post("/submissions", optionalAuth, requireAuth, async (req, res): Promise
   const [submission] = await db
     .insert(submissionsTable)
     .values({
-      question: body.data.question.trim(),
+      question: normalizedQuestion,
       status: "pending",
       submitterSessionId: body.data.sessionId ?? null,
       submitterUserId: userId,

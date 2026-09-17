@@ -11,6 +11,7 @@ import type { TrendingHabit } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { CATEGORY_EMOJI } from "../engine/personality";
 import type { Category } from "../types";
+import ReportButton from "../components/ReportButton";
 
 const SESSION_KEY = "ain_session_id";
 function getOrCreateSessionId(): string {
@@ -94,11 +95,13 @@ function HabitCard({
   index,
   localAnswers,
   onAnswer,
+  sessionId,
 }: {
   habit: TrendingHabit;
   index: number;
   localAnswers: LocalAnswers;
   onAnswer: (habitId: number, answer: "me_too" | "not_me") => void;
+  sessionId: string;
 }) {
   const answered = habit.userAnswer ?? localAnswers[habit.id] ?? null;
   const pct = habit.meTooPct;
@@ -182,6 +185,9 @@ function HabitCard({
               : "Same, not many do either 😌"}
           </p>
         )}
+      </div>
+      <div className="px-5 pb-4">
+        <ReportButton habit={habit} sessionId={sessionId} tone="light" />
       </div>
     </motion.div>
   );
@@ -329,6 +335,7 @@ export default function CategoryFeedScreen() {
                 index={i}
                 localAnswers={localAnswers}
                 onAnswer={handleAnswer}
+                sessionId={sessionId}
               />
             ))}
           </div>
