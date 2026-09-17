@@ -1,0 +1,60 @@
+Now implement ONLY fix #3: users deleting their own submitted habits.
+
+Do not implement fix #4 yet. Do not modify unrelated functionality, voting logic, authentication logic, or database structure unless absolutely necessary.
+
+Requirements
+
+Add a Delete option in My Habits for habits submitted by the currently authenticated user.
+
+Security requirements:
+
+* Deletion must be authorized server-side.
+* A user may delete only a habit/submission that they own.
+* Never trust a user-provided user ID to determine ownership.
+* Use the authenticated user’s identity/session on the server to verify ownership.
+* A user must not be able to delete another user’s habit by manipulating the request.
+
+Behavior:
+
+* Add a Delete action to each habit in My Habits.
+* Ask for confirmation before deletion.
+* If the habit is pending, deleting it should remove the pending submission.
+* If the habit has already been approved, deleting it should remove it from the public library/feed.
+* After successful deletion, My Habits should update immediately without requiring a manual refresh.
+* Handle errors gracefully and tell the user if deletion failed.
+
+Important database/data behavior:
+
+* Do NOT blindly cascade-delete historical votes, statistics, or unrelated records.
+* Inspect the existing schema and relationships first.
+* Preserve historical data where appropriate and follow the existing application’s data model.
+* Do not change existing admin deletion behavior.
+
+Implementation
+
+First inspect the existing habit/submission API, database schema, authentication mechanism, and My Habits screen. Then implement the smallest clean change necessary.
+
+Make sure the server endpoint performs the ownership check before deleting.
+
+Verification
+
+Test all of the following:
+
+1. User can delete their own pending habit.
+2. User can delete their own approved habit.
+3. Deleted approved habits no longer appear in the public feed/library.
+4. Confirmation appears before deletion.
+5. A user cannot delete another user’s habit, including by manually changing the request/ID.
+6. Existing admin deletion still works.
+7. Existing voting/statistics behavior is not unnecessarily broken.
+
+Report exactly:
+
+* Files changed
+* Backend endpoint/authorization implemented
+* Frontend changes
+* How ownership protection was tested
+* Any database considerations
+* Any errors encountered
+
+Do not implement fix #4 yet.

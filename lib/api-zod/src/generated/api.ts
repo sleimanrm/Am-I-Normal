@@ -241,6 +241,18 @@ export const GetMySubmissionsResponse = zod.array(GetMySubmissionsResponseItem)
 
 
 /**
+ * @summary Delete one of the current user's submissions
+ */
+export const DeleteMySubmissionParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteMySubmissionResponse = zod.object({
+  "ok": zod.boolean()
+})
+
+
+/**
  * @summary List all submissions (admin)
  */
 export const ListSubmissionsQueryParams = zod.object({

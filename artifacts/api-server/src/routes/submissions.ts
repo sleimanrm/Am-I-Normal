@@ -9,6 +9,8 @@ import {
   UpdateSubmissionParams,
   UpdateSubmissionResponse,
   GetMySubmissionsResponse,
+  DeleteMySubmissionParams,
+  DeleteMySubmissionResponse,
 } from "@workspace/api-zod";
 import { optionalAuth, requireAuth, requireAdmin } from "../middlewares/auth";
 
@@ -148,6 +150,63 @@ router.get("/submissions/mine", optionalAuth, requireAuth, async (req, res): Pro
       })),
     ),
   );
+});
+
+router.delete("/submissions/:id", optionalAuth, requireAuth, async (req, res): Promise<void> => {
+  const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const params = DeleteMySubmissionParams.safeParse({ id: parseInt(rawId, 10) });
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const userId = req.user!.userId;
+  const [submission] = await db
+    .select({
+      id: submissionsTable.id,
+      status: submissionsTable.status,
+      habitId: submissionsTable.habitId,
+    })
+    .from(submissionsTable)
+    .where(
+      and(
+        eq(submissionsTable.id, params.data.id),
+        eq(submissionsTable.submitterUserId, userId),
+      ),
+    )
+    .limit(1);
+
+  if (!submission) {
+    res.status(404).json({ error: "Submission not found" });
+    return;
+  }
+
+  await db.transaction(async (tx) => {
+    if (submission.status === "approved" && submission.habitId !== null) {
+      await tx
+        .update(habitsTable)
+        .set({ status: "archived" })
+        .where(eq(habitsTable.id, submission.habitId));
+    }
+
+    await tx.insert(moderationLogsTable).values({
+      habitId: submission.habitId,
+      action: "deleted",
+      actorUserId: userId,
+      note: "Submission deleted by its owner",
+    });
+
+    await tx
+      .delete(submissionsTable)
+      .where(
+        and(
+          eq(submissionsTable.id, submission.id),
+          eq(submissionsTable.submitterUserId, userId),
+        ),
+      );
+  });
+
+  res.json(DeleteMySubmissionResponse.parse({ ok: true }));
 });
 
 // ── Admin: list all submissions ────────────────────────────────────────────────

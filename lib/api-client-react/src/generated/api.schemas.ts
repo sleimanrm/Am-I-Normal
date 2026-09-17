@@ -172,6 +172,10 @@ export interface MySubmission {
   reportCount: number;
 }
 
+export interface DeleteSubmissionResponse {
+  ok: boolean;
+}
+
 export interface SubmissionInput {
   /**
      * @minLength 10

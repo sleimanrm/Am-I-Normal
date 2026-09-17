@@ -14,6 +14,7 @@ export * from './answerInput';
 export * from './authResponse';
 export * from './authUser';
 export * from './categorySummary';
+export * from './deleteSubmissionResponse';
 export * from './flaggedHabit';
 export * from './flaggedHabitTopReasonsItem';
 export * from './flaggedHabitUpdate';

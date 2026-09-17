@@ -313,6 +313,27 @@ paths:
         "400":
           description: Missing sessionId
 
+  /submissions/{id}:
+    delete:
+      operationId: deleteMySubmission
+      tags: [submissions]
+      summary: Delete one of the current user's submissions
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      responses:
+        "200":
+          description: Submission deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteSubmissionResponse"
+        "404":
+          description: Submission not found
+
   /admin/submissions:
     get:
       operationId: listSubmissions
@@ -878,6 +899,13 @@ components:
           type: integer
         reportCount:
           type: integer
+
+    DeleteSubmissionResponse:
+      type: object
+      required: [ok]
+      properties:
+        ok:
+          type: boolean
 
     SubmissionInput:
       type: object

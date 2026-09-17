@@ -28,6 +28,7 @@ import type {
   AuthResponse,
   AuthUser,
   CategorySummary,
+  DeleteSubmissionResponse,
   FlaggedHabit,
   FlaggedHabitUpdate,
   GetHabitsByCategoryParams,
@@ -1216,6 +1217,76 @@ export function useGetMySubmissions<TData = Awaited<ReturnType<typeof getMySubmi
 
 
 
+
+export const getDeleteMySubmissionUrl = (id: number,) => {
+
+
+
+
+  return `/api/submissions/${id}`
+}
+
+/**
+ * @summary Delete one of the current user's submissions
+ */
+export const deleteMySubmission = async (id: number, options?: RequestInit): Promise<DeleteSubmissionResponse> => {
+
+  return customFetch<DeleteSubmissionResponse>(getDeleteMySubmissionUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteMySubmissionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteMySubmission>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteMySubmission>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteMySubmission'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteMySubmission>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteMySubmission(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteMySubmissionMutationResult = NonNullable<Awaited<ReturnType<typeof deleteMySubmission>>>
+
+    export type DeleteMySubmissionMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete one of the current user's submissions
+ */
+export const useDeleteMySubmission = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteMySubmission>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteMySubmission>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteMySubmissionMutationOptions(options));
+    }
 
 export const getListSubmissionsUrl = (params?: ListSubmissionsParams,) => {
   const normalizedParams = new URLSearchParams();

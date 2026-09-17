@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Clock, CheckCircle2, XCircle, Users, Percent, Trophy, Fingerprint, ChevronRight, LogIn } from "lucide-react";
+import { ArrowLeft, Clock, CheckCircle2, XCircle, Users, Percent, Trophy, Fingerprint, ChevronRight, LogIn, Trash2 } from "lucide-react";
 import { useLocation } from "wouter";
-import { useGetMySubmissions, getGetMySubmissionsQueryKey } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useDeleteMySubmission, useGetMySubmissions, getGetMySubmissionsQueryKey } from "@workspace/api-client-react";
 import type { MySubmission } from "@workspace/api-client-react";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -44,19 +46,39 @@ function formatRespondents(n: number) {
 
 // ── Habit card ────────────────────────────────────────────────────────────────
 
-function HabitCard({ sub, delay = 0, onPress }: { sub: MySubmission; delay?: number; onPress: () => void }) {
+function HabitCard({
+  sub,
+  delay = 0,
+  onPress,
+  onDelete,
+  isDeleting,
+}: {
+  sub: MySubmission;
+  delay?: number;
+  onPress: () => void;
+  onDelete: () => void;
+  isDeleting: boolean;
+}) {
   const statusKey = (sub.status as Status) in STATUS_CONFIG ? (sub.status as Status) : "pending";
   const cfg = STATUS_CONFIG[statusKey];
   const StatusIcon = cfg.icon;
   const isApproved = sub.status === "approved";
 
   return (
-    <motion.button
+    <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, type: "spring", bounce: 0.2, duration: 0.45 }}
       whileTap={{ scale: 0.98 }}
+      role="button"
+      tabIndex={0}
       onClick={onPress}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onPress();
+        }
+      }}
       className="w-full bg-card rounded-[1.5rem] p-5 shadow-lg shadow-black/10 flex flex-col gap-3 text-left"
     >
       <div className="flex items-start justify-between gap-2">
@@ -94,7 +116,21 @@ function HabitCard({ sub, delay = 0, onPress }: { sub: MySubmission; delay?: num
           </div>
         </div>
       )}
-    </motion.button>
+      <div className="pt-1 border-t border-purple-100 flex justify-end">
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onDelete();
+          }}
+          disabled={isDeleting}
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-red-500 hover:text-red-700 disabled:opacity-50 transition-colors"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+          {isDeleting ? "Deleting…" : "Delete"}
+        </button>
+      </div>
+    </motion.div>
   );
 }
 
@@ -161,13 +197,42 @@ function HighlightCard({
 export default function MyHabitsScreen() {
   const [, navigate] = useLocation();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const goToDetail = (id: number) => navigate(`/my-habits/${id}`);
 
   const qParams = {};
+  const submissionsQueryKey = getGetMySubmissionsQueryKey(qParams);
   const { data: submissions = [], isLoading } = useGetMySubmissions(
     qParams,
-    { query: { enabled: !!user, queryKey: getGetMySubmissionsQueryKey(qParams) } }
+    { query: { enabled: !!user, queryKey: submissionsQueryKey } }
   );
+
+  const deleteSubmission = useDeleteMySubmission({
+    mutation: {
+      onSuccess: (_data, variables) => {
+        queryClient.setQueryData<MySubmission[]>(submissionsQueryKey, (current) =>
+          current?.filter((submission) => submission.id !== variables.id) ?? [],
+        );
+        queryClient.invalidateQueries({ queryKey: submissionsQueryKey });
+        setDeleteError(null);
+      },
+      onError: (error) => {
+        const apiError = error as { data?: { error?: string } | null };
+        setDeleteError(apiError.data?.error ?? "Unable to delete this habit. Please try again.");
+      },
+    },
+  });
+
+  const handleDelete = (submission: MySubmission) => {
+    const confirmed = window.confirm(
+      `Delete “${submission.question}”? This cannot be undone.`,
+    );
+    if (!confirmed) return;
+
+    setDeleteError(null);
+    deleteSubmission.mutate({ id: submission.id });
+  };
 
   const approvedWithPct = submissions.filter(
     (s) => s.status === "approved" && s.meTooPct !== null && s.answerCount > 0
@@ -220,6 +285,12 @@ export default function MyHabitsScreen() {
             </p>
           )}
         </motion.div>
+
+        {deleteError && (
+          <div className="mb-4 rounded-2xl bg-red-100 border border-red-200 px-4 py-3 text-red-700 text-sm font-semibold">
+            {deleteError}
+          </div>
+        )}
 
         <AnimatePresence mode="wait">
 
@@ -330,7 +401,14 @@ export default function MyHabitsScreen() {
               <div className="flex flex-col gap-3">
                 <p className="text-white/50 text-xs font-bold uppercase tracking-widest px-1">All Submitted</p>
                 {submissions.map((sub, i) => (
-                  <HabitCard key={sub.id} sub={sub} delay={0.05 + i * 0.04} onPress={() => goToDetail(sub.id)} />
+                  <HabitCard
+                    key={sub.id}
+                    sub={sub}
+                    delay={0.05 + i * 0.04}
+                    onPress={() => goToDetail(sub.id)}
+                    onDelete={() => handleDelete(sub)}
+                    isDeleting={deleteSubmission.isPending && deleteSubmission.variables?.id === sub.id}
+                  />
                 ))}
               </div>
 
