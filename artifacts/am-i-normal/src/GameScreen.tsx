@@ -196,6 +196,7 @@ export default function GameScreen() {
   const [queueIndex, setQueueIndex] = useState(0);
   const [userAnswer, setUserAnswer] = useState<Answer | null>(null);
   const [streak, setStreak] = useState(0);
+  const [profileMilestoneShown, setProfileMilestoneShown] = useState(false);
   const [traitScores, setTraitScores] = useState<TraitScores>(emptyScores);
   const [traitMax, setTraitMax] = useState<TraitScores>(emptyScores);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
@@ -256,7 +257,11 @@ export default function GameScreen() {
       setQueueIndex(nextIdx);
     }
     setUserAnswer(null);
-    setView(streak >= PROFILE_UNLOCK_AT ? "profile" : "question");
+    const shouldShowProfile = streak >= PROFILE_UNLOCK_AT && !profileMilestoneShown;
+    if (shouldShowProfile) {
+      setProfileMilestoneShown(true);
+    }
+    setView(shouldShowProfile ? "profile" : "question");
   };
 
   const resultMessage = userAnswer && current ? getResultMessage(current.meTooPct, userAnswer) : "";
