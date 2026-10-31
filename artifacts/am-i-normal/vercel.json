@@ -1,5 +1,13 @@
 {
+  "version": 2,
   "rewrites": [
-    {"source": "/(.*)", "destination": "/index.html"}
+    {
+      "source": "/api/:path*",
+      "destination": "https://am-i-normal-backend.onrender.com/api/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ]
 }
