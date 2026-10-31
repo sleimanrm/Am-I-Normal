@@ -1,7 +1,21 @@
 import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET ?? "dev-secret-change-me";
+const configuredJwtSecret = process.env.JWT_SECRET;
+const isProduction = process.env.NODE_ENV === "production";
+
+if (
+  isProduction &&
+  (!configuredJwtSecret ||
+    configuredJwtSecret.length < 32 ||
+    configuredJwtSecret === "dev-secret-change-me")
+) {
+  throw new Error(
+    "JWT_SECRET must be set to a unique value of at least 32 characters in production.",
+  );
+}
+
+const JWT_SECRET = configuredJwtSecret ?? "dev-secret-change-me";
 
 export interface AuthPayload {
   userId: number;

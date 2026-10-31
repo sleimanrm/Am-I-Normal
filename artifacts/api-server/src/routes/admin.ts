@@ -5,7 +5,16 @@ import { JWT_SECRET } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
-const ADMIN_PIN = process.env.ADMIN_PIN ?? "0000";
+const configuredAdminPin = process.env.ADMIN_PIN;
+
+if (
+  process.env.NODE_ENV === "production" &&
+  (!configuredAdminPin || configuredAdminPin === "0000")
+) {
+  throw new Error("ADMIN_PIN must be set to a non-default value in production.");
+}
+
+const ADMIN_PIN = configuredAdminPin ?? "0000";
 const ADMIN_TOKEN_TTL = "8h";
 
 router.post("/admin/auth", (req, res): void => {
