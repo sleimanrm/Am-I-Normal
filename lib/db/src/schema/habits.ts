@@ -7,7 +7,7 @@ export const habitsTable = pgTable("habits", {
   question: text("question").notNull(),
   category: text("category").notNull(),
   meTooPctDefault: integer("mee_too_pct_default").notNull().default(50),
-  traits: jsonb("traits").$type<Record<string, number>>().notNull().default({}),
+  traits: jsonb("traits").$type<Record<string, number | undefined>>().notNull().default({}),
   source: text("source").notNull().default("curated"),
   status: text("status").notNull().default("active"),
   reportCount: integer("report_count").notNull().default(0),

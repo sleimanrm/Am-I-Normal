@@ -13,6 +13,9 @@ export const VALID_CATEGORIES = new Set([
   "Social",
   "Body",
   "Overthinking",
+  "Pets",
+  "Habits",
+  "Community",
 ]);
 
 interface ImportItem {

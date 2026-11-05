@@ -113,11 +113,11 @@ function SpotlightCard({
         />
       </div>
 
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="font-extrabold text-2xl text-card-foreground">{pct}%</span>
-          <span className="text-card-foreground/40 text-xs font-semibold">Me Too</span>
-          <span className="text-card-foreground/25 text-xs">·</span>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="font-extrabold text-2xl text-card-foreground">{pct}%</span>
+          </div>
           <div className="flex items-center gap-1 text-card-foreground/35">
             <Users className="w-3.5 h-3.5" />
             <span className="text-xs font-semibold">
@@ -126,13 +126,14 @@ function SpotlightCard({
           </div>
         </div>
 
+        {/* Row 2: Voting actions */}
         <AnswerButtons habit={habit} localAnswers={localAnswers} onAnswer={onAnswer} />
       </div>
     </motion.div>
   );
 }
 
-// ── Community habit row ────────────────────────────────────────────────────────
+// ── Community habit row ─────────────────────────────────────────────────────────
 
 function CommunityCard({
   habit,
@@ -168,20 +169,28 @@ function CommunityCard({
         </div>
       )}
 
-      <div className="flex items-center justify-between">
+      <div className="space-y-3">
         {hasAnswers ? (
-          <div className="flex items-center gap-2 text-card-foreground/40">
-            <span className="text-sm font-bold text-primary">{pct}%</span>
-            <span className="text-xs">Me Too</span>
-            <span className="text-card-foreground/20">·</span>
-            <Users className="w-3 h-3" />
-            <span className="text-xs font-medium">{habit.answerCount}</span>
-          </div>
+          <>
+            {/* Row 1: percentage + voter count */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-card-foreground/40">
+                <span className="text-sm font-bold text-primary">{pct}%</span>
+              </div>
+              <div className="flex items-center gap-1 text-card-foreground/35">
+                <Users className="w-3.5 h-3.5" />
+                <span className="text-xs font-semibold">
+                  {habit.answerCount >= 1000 ? `${(habit.answerCount / 1000).toFixed(1)}k` : habit.answerCount}
+                </span>
+              </div>
+            </div>
+
+            {/* Row 2: Voting actions */}
+            <AnswerButtons habit={habit} localAnswers={localAnswers} onAnswer={onAnswer} />
+          </>
         ) : (
           <span className="text-card-foreground/30 text-xs">Be the first to answer!</span>
         )}
-
-        <AnswerButtons habit={habit} localAnswers={localAnswers} onAnswer={onAnswer} />
       </div>
     </motion.div>
   );
@@ -203,7 +212,7 @@ function SectionHeader({ emoji, title, delay }: { emoji: string; title: string; 
   );
 }
 
-// ── Main screen ────────────────────────────────────────────────────────────────
+// ── Main screen ─────────────────────────────────────────────────────────────────
 
 export default function TrendingScreen() {
   const [, navigate] = useLocation();
