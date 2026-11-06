@@ -490,21 +490,28 @@ function SubmissionCard({
 
 function HabitAdminCard({
   habit,
-  onDelete,
+    onDelete,
   onSave,
+  onRestore,
+  onPermanentDelete,
   isDeleting,
   isSaving,
+  isPermanentDeleting,
 }: {
-  habit: AdminHabit;
+    habit: AdminHabit;
   onDelete: (id: number) => void;
   onSave: (id: number, question: string, category: string) => void;
+  onRestore: (id: number) => void;
+  onPermanentDelete: (id: number) => void;
   isDeleting: boolean;
   isSaving: boolean;
+  isPermanentDeleting: boolean;
 }) {
   const [editing, setEditing] = useState(false);
-  const [editText, setEditText] = useState(habit.question);
-  const [editCategory, setEditCategory] = useState(habit.category);
-  const [confirmDelete, setConfirmDelete] = useState(false);
+const [editText, setEditText] = useState(habit.question);
+const [editCategory, setEditCategory] = useState(habit.category);
+const [confirmDelete, setConfirmDelete] = useState(false);
+const [confirmPermanentDelete, setConfirmPermanentDelete] = useState(false);
 
   const reset = () => {
     setEditing(false);
@@ -621,9 +628,47 @@ function HabitAdminCard({
           </motion.div>
         )}
       </AnimatePresence>
-
+{/* Permanent deletion confirmation */}
+<AnimatePresence>
+  {confirmPermanentDelete && (
+    <motion.div
+      initial={{ height: 0, opacity: 0 }}
+      animate={{ height: "auto", opacity: 1 }}
+      exit={{ height: 0, opacity: 0 }}
+      className="overflow-hidden border-t border-red-200 bg-red-50"
+    >
+      <div className="p-4 space-y-3">
+        <p className="text-red-700 font-bold text-sm">
+          Permanently delete this habit?
+        </p>
+        <p className="text-red-600 text-xs">
+          This cannot be undone. Votes and reports will be deleted.
+          Moderation history will be retained.
+        </p>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setConfirmPermanentDelete(false)}
+            className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-white border border-gray-200 text-gray-500"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => {
+              onPermanentDelete(habit.id);
+              setConfirmPermanentDelete(false);
+            }}
+            disabled={isPermanentDeleting}
+            className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-red-700 text-white disabled:opacity-50"
+          >
+            {isPermanentDeleting ? "Deleting..." : "Delete permanently"}
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  )}
+</AnimatePresence>
       {/* Action buttons */}
-      {!confirmDelete && (
+      {!confirmDelete && !confirmPermanentDelete && (
         <div className="px-5 pb-4 flex gap-2 border-t border-gray-100 pt-3">
           {editing ? (
             <>
@@ -648,6 +693,26 @@ function HabitAdminCard({
                   <Trash2 className="w-4 h-4" /> Archive
                 </button>
               )}
+              {isArchived && (
+  <>
+    <button
+      onClick={() => onRestore(habit.id)}
+      disabled={isSaving}
+      className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-green-50 border border-green-200 text-green-700 hover:bg-green-100 disabled:opacity-50"
+    >
+      Restore
+    </button>
+
+    <button
+      onClick={() => setConfirmPermanentDelete(true)}
+      disabled={isPermanentDeleting}
+      className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-red-50 border border-red-200 text-red-700 hover:bg-red-100 disabled:opacity-50"
+    >
+      <Trash2 className="w-4 h-4 inline mr-1" />
+      Delete permanently
+    </button>
+  </>
+)}
             </>
           )}
         </div>
@@ -823,7 +888,34 @@ function AdminDashboard({ onLock }: { onLock: () => void }) {
       onSuccess: () => queryClient.invalidateQueries({ queryKey: getListAdminHabitsQueryKey() }),
     },
   });
+const [permanentDeleteError, setPermanentDeleteError] = useState<string | null>(null);
+const [permanentDeletingId, setPermanentDeletingId] = useState<number | null>(null);
 
+const handlePermanentDelete = async (id: number) => {
+  const token = sessionStorage.getItem(SESSION_KEY) ?? "";
+
+  setPermanentDeleteError(null);
+  setPermanentDeletingId(id);
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/admin/habits/${id}/permanent`, {
+      method: "DELETE",
+      headers: { "X-Admin-Token": token },
+    });
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || "Failed to permanently delete habit");
+    }
+
+    await queryClient.invalidateQueries({ queryKey: getListAdminHabitsQueryKey() });
+    await queryClient.invalidateQueries({ queryKey: ["admin-analytics"] });
+  } catch (error) {
+    setPermanentDeleteError(error instanceof Error ? error.message : "Deletion failed");
+  } finally {
+    setPermanentDeletingId(null);
+  }
+};
   const updateHabit = useUpdateHabit({
     mutation: {
       onSuccess: () => queryClient.invalidateQueries({ queryKey: getListAdminHabitsQueryKey() }),
@@ -1142,18 +1234,37 @@ function AdminDashboard({ onLock }: { onLock: () => void }) {
                 <p className="font-semibold">No habits found</p>
               </div>
             ) : (
-              <div className="space-y-3">
-                <AnimatePresence>
-                  {visibleHabits.map((habit) => (
-                    <HabitAdminCard
-                      key={habit.id}
-                      habit={habit}
-                      onDelete={(id) => deleteHabit.mutate({ id })}
-                      onSave={(id, question, category) => updateHabit.mutate({ id, data: { question, category } })}
-                      isDeleting={deleteHabit.isPending}
-                      isSaving={updateHabit.isPending}
-                    />
-                  ))}
+             <div className="space-y-3">
+  {permanentDeleteError && (
+    <div className="rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+      Permanent deletion failed: {permanentDeleteError}
+      <button
+        onClick={() => setPermanentDeleteError(null)}
+        className="ml-2 underline"
+      >
+        Dismiss
+      </button>
+    </div>
+  )}
+
+  <AnimatePresence>
+    {visibleHabits.map((habit) => (
+  <HabitAdminCard
+    key={habit.id}
+    habit={habit}
+    onDelete={(id) => deleteHabit.mutate({ id })}
+    onSave={(id, question, category) =>
+      updateHabit.mutate({ id, data: { question, category } })
+    }
+    onRestore={(id) =>
+      updateHabit.mutate({ id, data: { status: "active" } })
+    }
+    onPermanentDelete={(id) => void handlePermanentDelete(id)}
+isDeleting={deleteHabit.isPending}
+isSaving={updateHabit.isPending}
+isPermanentDeleting={permanentDeletingId === habit.id}
+  />
+))}
                 </AnimatePresence>
               </div>
             )}

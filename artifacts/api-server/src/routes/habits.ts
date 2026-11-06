@@ -1,5 +1,12 @@
 import { Router, type IRouter } from "express";
-import { db, habitsTable, answersTable, reportsTable, moderationLogsTable } from "@workspace/db";
+import {
+  db,
+  habitsTable,
+  answersTable,
+  reportsTable,
+  moderationLogsTable,
+  submissionsTable,
+} from "@workspace/db";
 import { eq, sql, count, desc, and } from "drizzle-orm";
 import { optionalAuth, requireAdmin } from "../middlewares/auth";
 import {
@@ -490,7 +497,58 @@ router.delete("/admin/habits/:id", requireAdmin, async (req, res): Promise<void>
 
   res.json({ ok: true });
 });
+// Admin: permanently delete an archived habit
+router.delete(
+  "/admin/habits/:id/permanent",
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const params = DeleteHabitParams.safeParse({ id: parseInt(rawId, 10) });
 
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+
+    const habitId = params.data.id;
+
+    const result = await db.transaction(async (tx) => {
+      const [habit] = await tx
+        .select()
+        .from(habitsTable)
+        .where(eq(habitsTable.id, habitId));
+
+      if (!habit) {
+        return { status: 404 as const, error: "Habit not found" };
+      }
+
+      if (habit.status !== "archived") {
+        return {
+          status: 400 as const,
+          error: "Only archived habits can be permanently deleted",
+        };
+      }
+
+      await tx.delete(answersTable).where(eq(answersTable.habitId, habitId));
+
+      await tx
+        .update(submissionsTable)
+        .set({ habitId: null })
+        .where(eq(submissionsTable.habitId, habitId));
+
+      await tx.delete(habitsTable).where(eq(habitsTable.id, habitId));
+
+      return { status: 200 as const };
+    });
+
+    if ("error" in result) {
+      res.status(result.status).json({ error: result.error });
+      return;
+    }
+
+    res.json({ ok: true });
+  },
+);
 // ── Admin: edit habit ─────────────────────────────────────────────────────────
 // requireAdmin: PIN-issued JWT required
 
