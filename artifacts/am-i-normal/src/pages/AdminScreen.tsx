@@ -20,7 +20,7 @@ import {
 } from "@workspace/api-client-react";
 import type { Submission, FlaggedHabit, AdminHabit } from "@workspace/api-client-react";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
-
+const API_BASE_URL = import.meta.env.VITE_API_URL ?? "";
 // ── Analytics types ────────────────────────────────────────────────────────────
 
 interface AdminAnalytics {
@@ -788,7 +788,7 @@ function AdminDashboard({ onLock }: { onLock: () => void }) {
     setImportError(null);
     try {
       const token = sessionStorage.getItem(SESSION_KEY) ?? "";
-      const res = await fetch("/api/admin/habits/import", {
+      const res = await fetch(`${API_BASE_URL}/api/admin/habits/import`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-Admin-Token": token },
         body: JSON.stringify({ habits: validHabits.map((h) => ({ question: h.question, category: h.category })) }),
@@ -844,7 +844,7 @@ function AdminDashboard({ onLock }: { onLock: () => void }) {
     queryKey: ["admin-analytics"],
     queryFn: async () => {
       const token = sessionStorage.getItem(SESSION_KEY) ?? "";
-      const res = await fetch("/api/admin/analytics", {
+      const res = await fetch(`${API_BASE_URL}/api/admin/analytics`, {
         headers: { "X-Admin-Token": token },
       });
       if (!res.ok) throw new Error("Failed to fetch analytics");
