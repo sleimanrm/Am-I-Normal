@@ -8,6 +8,9 @@ const router: IRouter = Router();
 
 const VOTE_RATE_LIMIT = 20;
 
+// Postgres unique violation error code
+const UNIQUE_VIOLATION = "23505";
+
 router.get("/answers/voted", optionalAuth, requireAuth, async (req, res): Promise<void> => {
   const rows = await db
     .select({ habitId: answersTable.habitId })
@@ -66,23 +69,33 @@ router.post("/answers", optionalAuth, requireAuth, async (req, res): Promise<voi
     return;
   }
 
-  const [answer] = await db
-    .insert(answersTable)
-    .values({
-      habitId: body.data.habitId,
-      sessionId: body.data.sessionId,
-      answer: body.data.answer,
-      userId,
-    })
-    .returning();
+  try {
+    const [answer] = await db
+      .insert(answersTable)
+      .values({
+        habitId: body.data.habitId,
+        sessionId: body.data.sessionId,
+        answer: body.data.answer,
+        userId,
+      })
+      .returning();
 
-  res.status(201).json({
-    id: answer.id,
-    habitId: answer.habitId,
-    sessionId: answer.sessionId,
-    answer: answer.answer,
-    answeredAt: answer.answeredAt,
-  });
+    res.status(201).json({
+      id: answer.id,
+      habitId: answer.habitId,
+      sessionId: answer.sessionId,
+      answer: answer.answer,
+      answeredAt: answer.answeredAt,
+    });
+  } catch (err: unknown) {
+    // Defense-in-depth: handle unique constraint violation from partial unique index
+    // Catches race condition where concurrent requests both pass the application-level check
+    if (err instanceof Error && "code" in err && (err as { code: string }).code === UNIQUE_VIOLATION) {
+      res.status(409).json({ error: "Already voted on this habit" });
+      return;
+    }
+    throw err;
+  }
 });
 
 export default router;

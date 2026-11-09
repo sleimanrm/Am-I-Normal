@@ -27,6 +27,9 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string): Prom
     port: config.port,
     secure: config.secure,
     auth: config.auth,
+    connectionTimeout: 10000,
+    socketTimeout: 10000,
+    greetingTimeout: 5000,
   });
 
   await transporter.sendMail({

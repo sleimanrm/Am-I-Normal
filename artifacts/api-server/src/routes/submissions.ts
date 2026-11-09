@@ -13,6 +13,7 @@ import {
   DeleteMySubmissionResponse,
 } from "@workspace/api-zod";
 import { optionalAuth, requireAuth, requireAdmin } from "../middlewares/auth";
+import { validateHabit } from "../lib/validation/habitValidator";
 
 const router: IRouter = Router();
 
@@ -32,6 +33,13 @@ router.post("/submissions", optionalAuth, requireAuth, async (req, res): Promise
   const body = CreateSubmissionBody.safeParse(req.body);
   if (!body.success) {
     res.status(400).json({ error: body.error.message });
+    return;
+  }
+
+  // Server-side content validation — cannot be bypassed by direct API calls
+  const validation = validateHabit(body.data.question);
+  if (!validation.ok) {
+    res.status(400).json({ error: validation.error });
     return;
   }
 
