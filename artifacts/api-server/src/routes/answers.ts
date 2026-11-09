@@ -3,6 +3,7 @@ import { db, answersTable, habitsTable } from "@workspace/db";
 import { eq, and, count, sql } from "drizzle-orm";
 import { RecordAnswerBody } from "@workspace/api-zod";
 import { optionalAuth, requireAuth } from "../middlewares/auth";
+import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 
@@ -11,12 +12,26 @@ const VOTE_RATE_LIMIT = 20;
 // Postgres unique violation error code
 const UNIQUE_VIOLATION = "23505";
 
-router.get("/answers/voted", optionalAuth, requireAuth, async (req, res): Promise<void> => {
-  const rows = await db
-    .select({ habitId: answersTable.habitId })
-    .from(answersTable)
-    .where(eq(answersTable.userId, req.user!.userId));
+// Helper to time database queries
+async function timeQuery<T>(label: string, fn: () => Promise<T>): Promise<T> {
+  const start = process.hrtime.bigint();
+  try {
+    return await fn();
+  } finally {
+    const durationMs = Number(process.hrtime.bigint() - start) / 1e6;
+    logger.info({ label, durationMs: Math.round(durationMs * 100) / 100 }, "db.query");
+  }
+}
 
+router.get("/answers/voted", optionalAuth, requireAuth, async (req, res): Promise<void> => {
+  const rows = await timeQuery("GET /api/answers/voted", async () => {
+    return await db
+      .select({ habitId: answersTable.habitId })
+      .from(answersTable)
+      .where(eq(answersTable.userId, req.user!.userId));
+  });
+
+  logger.info({ label: "GET /api/answers/voted", rowCount: rows.length }, "db.query.result");
   res.json(rows.map((r) => r.habitId));
 });
 

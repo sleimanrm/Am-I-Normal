@@ -9,6 +9,7 @@ import {
 } from "@workspace/db";
 import { eq, sql, count, desc, and } from "drizzle-orm";
 import { optionalAuth, requireAdmin } from "../middlewares/auth";
+import { logger } from "../lib/logger";
 import {
   GetHabitsResponse,
   GetTrendingQueryParams,
@@ -31,6 +32,17 @@ import {
 
 const router: IRouter = Router();
 
+// Helper to time database queries
+async function timeQuery<T>(label: string, fn: () => Promise<T>): Promise<T> {
+  const start = process.hrtime.bigint();
+  try {
+    return await fn();
+  } finally {
+    const durationMs = Number(process.hrtime.bigint() - start) / 1e6;
+    logger.info({ label, durationMs: Math.round(durationMs * 100) / 100 }, "db.query");
+  }
+}
+
 const FLAG_THRESHOLD = 1;
 const REPORT_DAILY_LIMIT = 20;
 const ANON_REPORT_DAILY_LIMIT = 5;
@@ -39,29 +51,31 @@ const VALID_HABIT_STATUSES = ["active", "archived"] as const;
 // ── Habit list ────────────────────────────────────────────────────────────────
 
 router.get("/habits", async (req, res): Promise<void> => {
-  const rows = await db
-    .select({
-      id: habitsTable.id,
-      question: habitsTable.question,
-      category: habitsTable.category,
-      meTooPct: sql<string>`
-        CASE
-          WHEN COUNT(${answersTable.id}) = 0 THEN ${habitsTable.meTooPctDefault}::numeric
-          ELSE ROUND(SUM(CASE WHEN ${answersTable.answer} = 'me_too' THEN 100.0 ELSE 0 END) / COUNT(${answersTable.id}))
-        END
-      `,
-      traits: habitsTable.traits,
-      source: habitsTable.source,
-      status: habitsTable.status,
-      answerCount: count(answersTable.id),
-      reportCount: habitsTable.reportCount,
-      flagged: habitsTable.flagged,
-    })
-    .from(habitsTable)
-    .leftJoin(answersTable, eq(answersTable.habitId, habitsTable.id))
-    .where(eq(habitsTable.status, "active"))
-    .groupBy(habitsTable.id)
-    .orderBy(habitsTable.id);
+  const rows = await timeQuery("GET /api/habits", async () => {
+    return await db
+      .select({
+        id: habitsTable.id,
+        question: habitsTable.question,
+        category: habitsTable.category,
+        meTooPct: sql<string>`
+          CASE
+            WHEN COUNT(${answersTable.id}) = 0 THEN ${habitsTable.meTooPctDefault}::numeric
+            ELSE ROUND(SUM(CASE WHEN ${answersTable.answer} = 'me_too' THEN 100.0 ELSE 0 END) / COUNT(${answersTable.id}))
+          END
+        `,
+        traits: habitsTable.traits,
+        source: habitsTable.source,
+        status: habitsTable.status,
+        answerCount: count(answersTable.id),
+        reportCount: habitsTable.reportCount,
+        flagged: habitsTable.flagged,
+      })
+      .from(habitsTable)
+      .leftJoin(answersTable, eq(answersTable.habitId, habitsTable.id))
+      .where(eq(habitsTable.status, "active"))
+      .groupBy(habitsTable.id)
+      .orderBy(habitsTable.id);
+  });
 
   const habits = rows.map((r) => ({
     ...r,
@@ -69,6 +83,7 @@ router.get("/habits", async (req, res): Promise<void> => {
     answerCount: Number(r.answerCount),
   }));
 
+  logger.info({ label: "GET /api/habits", rowCount: rows.length }, "db.query.result");
   res.json(GetHabitsResponse.parse(habits));
 });
 

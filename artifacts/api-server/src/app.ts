@@ -4,6 +4,7 @@ import pinoHttp from "pino-http";
 import rateLimit from "express-rate-limit";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { pool } from "@workspace/db";
 
 const app: Express = express();
 
@@ -29,6 +30,27 @@ app.use(
     },
   }),
 );
+
+// Request timing middleware - logs request duration, uptime, and pool stats
+app.use((req, res, next) => {
+  const start = process.hrtime.bigint();
+  res.on("finish", () => {
+    const durationMs = Number(process.hrtime.bigint() - start) / 1e6;
+    logger.info({
+      method: req.method,
+      path: req.url?.split("?")[0],
+      status: res.statusCode,
+      durationMs: Math.round(durationMs * 100) / 100,
+      uptime: Math.round(process.uptime() * 100) / 100,
+      pool: {
+        total: pool.totalCount,
+        idle: pool.idleCount,
+        waiting: pool.waitingCount,
+      },
+    }, "http.request");
+  });
+  next();
+});
 const allowedOrigins = [
   "https://am-i-normal.onrender.com",
   "http://localhost:3001",
