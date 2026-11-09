@@ -1,7 +1,18 @@
 import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET ?? "dev-secret-change-me";
+function loadJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error("JWT_SECRET environment variable is required but not set");
+  }
+  if (Buffer.byteLength(secret, "utf8") < 32) {
+    throw new Error("JWT_SECRET must be at least 32 bytes (UTF-8)");
+  }
+  return secret;
+}
+
+const JWT_SECRET = loadJwtSecret();
 
 export interface AuthPayload {
   userId: number;
@@ -25,7 +36,7 @@ export function optionalAuth(req: Request, _res: Response, next: NextFunction): 
   if (header?.startsWith("Bearer ")) {
     const token = header.slice(7);
     try {
-      const payload = jwt.verify(token, JWT_SECRET) as AuthPayload;
+      const payload = jwt.verify(token, JWT_SECRET, { algorithms: ["HS256"] }) as AuthPayload;
       req.user = payload;
     } catch {
       // Invalid token — just skip, don't block
@@ -49,7 +60,7 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction): v
     return;
   }
   try {
-    const payload = jwt.verify(adminToken, JWT_SECRET) as AdminPayload;
+    const payload = jwt.verify(adminToken, JWT_SECRET, { algorithms: ["HS256"] }) as AdminPayload;
     if (payload.admin !== true) {
       res.status(403).json({ error: "Forbidden" });
       return;
