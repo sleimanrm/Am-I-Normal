@@ -144,16 +144,19 @@ function PinGate({ onAuth }: { onAuth: () => void }) {
   });
 
   const addDigit = (d: string) => {
-    if (digits.length >= 4 || verify.isPending) return;
+    if (digits.length >= 12 || verify.isPending) return;
     const next = [...digits, d];
     setDigits(next);
     setError(false);
-    if (next.length === 4) {
-      verify.mutate({ data: { pin: next.join("") } });
-    }
+  };
+
+  const submitPin = () => {
+    if (digits.length < 8 || digits.length > 12 || verify.isPending) return;
+    verify.mutate({ data: { pin: digits.join("") } });
   };
 
   const removeDigit = () => setDigits((prev) => prev.slice(0, -1));
+  const resetDigits = () => setDigits([]);
 
   const keys = ["1","2","3","4","5","6","7","8","9","","0","⌫"];
 
@@ -172,15 +175,15 @@ function PinGate({ onAuth }: { onAuth: () => void }) {
         {/* Title */}
         <div className="text-center">
           <h1 className="text-white font-extrabold text-2xl">Admin Access</h1>
-          <p className="text-white/50 text-sm mt-1">Enter your PIN to continue</p>
+          <p className="text-white/50 text-sm mt-1">Enter 8-12 digit PIN</p>
         </div>
 
         {/* Dots */}
-        <div className="flex gap-4">
-          {[0, 1, 2, 3].map((i) => (
+        <div className="flex gap-2 flex-wrap justify-center">
+          {Array.from({ length: 12 }).map((_, i) => (
             <div
               key={i}
-              className={`w-4 h-4 rounded-full border-2 transition-all duration-200 ${
+              className={`w-3 h-3 rounded-full border-2 transition-all duration-200 ${
                 digits.length > i
                   ? error ? "bg-red-400 border-red-400" : "bg-white border-white"
                   : "bg-transparent border-white/40"
@@ -221,6 +224,17 @@ function PinGate({ onAuth }: { onAuth: () => void }) {
               </button>
             );
           })}
+          <div className="col-span-3">
+            <button
+              onClick={submitPin}
+              disabled={digits.length < 8 || digits.length > 12 || verify.isPending}
+              className={`w-full py-3 rounded-xl font-bold text-lg transition-all ${
+                verify.isPending ? "opacity-50 cursor-not-allowed" : "bg-purple-600 text-white hover:bg-purple-700"
+              }`}
+            >
+              {verify.isPending ? "Verifying…" : "Verify"}
+            </button>
+          </div>
         </div>
       </motion.div>
     </div>
