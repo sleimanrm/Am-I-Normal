@@ -30,7 +30,7 @@ import {
   formatRespondents,
 } from "./engine/personality";
 
-// ── Constants ─────────────────────────────────────────────────────────────────
+// --- Constants ---
 
 const PROFILE_UNLOCK_AT = 20;
 const REVEAL_DURATION = 3000;
@@ -45,7 +45,7 @@ function getOrCreateSessionId(): string {
   return id;
 }
 
-// ── Animated number counter ───────────────────────────────────────────────────
+// --- Animated number counter ---
 
 function AnimatedCounter({ target, duration = REVEAL_DURATION }: { target: number; duration?: number }) {
   const [value, setValue] = useState(0);
@@ -63,7 +63,7 @@ function AnimatedCounter({ target, duration = REVEAL_DURATION }: { target: numbe
   return <span>{value}</span>;
 }
 
-// ── Animated trait bar ────────────────────────────────────────────────────────
+// â”€â”€ Animated trait bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function TraitBar({ pct, color, delay }: { pct: number; color: string; delay: number }) {
   const [width, setWidth] = useState(0);
@@ -88,7 +88,7 @@ function TraitBar({ pct, color, delay }: { pct: number; color: string; delay: nu
   );
 }
 
-// ── Swipeable habit card ──────────────────────────────────────────────────────
+// â”€â”€ Swipeable habit card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface SwipeCardProps {
   habit: Habit;
@@ -116,7 +116,7 @@ function SwipeCard({ habit, index, onAnswer }: SwipeCardProps) {
     }
   };
 
-  const categoryEmoji = CATEGORY_EMOJI[habit.category as Category] ?? "💬";
+  const categoryEmoji = CATEGORY_EMOJI[habit.category as Category] ?? "ðŸ’¬";
 
   return (
     <motion.div
@@ -169,7 +169,7 @@ function SwipeCard({ habit, index, onAnswer }: SwipeCardProps) {
   );
 }
 
-// ── Queue ─────────────────────────────────────────────────────────────────────
+// â”€â”€ Queue â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 type View = "landing" | "question" | "result" | "profile";
 
@@ -177,7 +177,7 @@ function buildQueue(habits: Habit[]): Habit[] {
   return shuffle([...habits]);
 }
 
-// ── Game screen ───────────────────────────────────────────────────────────────
+// â”€â”€ Game screen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export default function GameScreen() {
   const [, navigate] = useLocation();
@@ -277,7 +277,7 @@ export default function GameScreen() {
     return (
       <div className="min-h-[100dvh] w-full flex flex-col items-center justify-center gap-4 bg-gradient-to-br from-[#7C3AED] to-[#4C1D95]">
         <div className="w-10 h-10 border-4 border-white/25 border-t-white rounded-full animate-spin" />
-        <p className="text-white/55 font-medium text-sm">Loading habits…</p>
+        <p className="text-white/55 font-medium text-sm">Loading habitsâ€¦</p>
       </div>
     );
   }
@@ -287,7 +287,7 @@ export default function GameScreen() {
       <div className="w-full max-w-[390px] relative flex items-center justify-center" style={{ minHeight: 600 }}>
         <AnimatePresence mode="wait">
 
-          {/* ── LANDING ───────────────────────────────────────────────────── */}
+          {/* â”€â”€ LANDING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           {view === "landing" && (
             <motion.div key="landing"
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
@@ -309,12 +309,12 @@ export default function GameScreen() {
                 onClick={handleStart}
                 disabled={isLoading}
                 className="w-full max-w-[280px] bg-white text-purple-900 font-bold text-lg py-4 px-8 rounded-full shadow-lg shadow-black/20 hover:shadow-xl transition-shadow disabled:opacity-60">
-                {isLoading ? "Loading…" : "Start Discovering"}
+                {isLoading ? "Loadingâ€¦" : "Start Discovering"}
               </motion.button>
             </motion.div>
           )}
 
-          {/* ── QUESTION ──────────────────────────────────────────────────── */}
+          {/* â”€â”€ QUESTION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           {view === "question" && current && (
             <motion.div key={`question-${queueIndex}`}
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -364,12 +364,12 @@ export default function GameScreen() {
                 </motion.button>
               </div>
 
-              {/* Report link — sits below action buttons, unobtrusive */}
+              {/* Report link â€” sits below action buttons, unobtrusive */}
               <ReportButton habit={current} sessionId={sessionId} />
             </motion.div>
           )}
 
-          {/* ── RESULT ────────────────────────────────────────────────────── */}
+          {/* â”€â”€ RESULT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           {view === "result" && current && (
             <motion.div key={`result-${queueIndex}`}
               initial={{ opacity: 0, scale: 0.9, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -437,14 +437,14 @@ export default function GameScreen() {
                   className="flex items-center justify-center gap-2 bg-white/10 backdrop-blur border border-white/15 rounded-2xl px-5 py-3">
                   <span className="text-white/50 text-xs font-medium uppercase tracking-wider">Up next</span>
                   <span className="text-white font-semibold text-sm">
-                    {CATEGORY_EMOJI[next.category as Category] ?? "💬"} {next.category}
+                    {CATEGORY_EMOJI[next.category as Category] ?? "ðŸ’¬"} {next.category}
                   </span>
                 </motion.div>
               )}
             </motion.div>
           )}
 
-          {/* ── PROFILE ───────────────────────────────────────────────────── */}
+          {/* â”€â”€ PROFILE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           {view === "profile" && (
             <motion.div key="profile"
               initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -24 }}
@@ -492,6 +492,10 @@ export default function GameScreen() {
                 <div className="mt-6 pt-5 border-t border-purple-100 z-10 relative">
                   <p className="text-card-foreground/40 text-xs text-center">Based on {streak} habits answered</p>
                 </div>
+                  <div className="mt-2 text-xs text-card-foreground/60 text-center">
+                    Am I Normal? is for entertainment and social comparison only.
+                    Results are not intended as medical advice, psychological assessment, or a clinical diagnosis.
+                  </div>
               </div>
 
               <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.96 }}
@@ -521,7 +525,7 @@ export default function GameScreen() {
                 whileHover={{ scale: 1.12 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={logout}
-                title={`Logged in as ${user.email} — tap to sign out`}
+                title={`Logged in as ${user.email} â€” tap to sign out`}
                 className="w-12 h-12 rounded-full bg-white/15 hover:bg-white/25 transition-colors flex items-center justify-center"
               >
                 <LogOut className="w-4 h-4 text-white" />

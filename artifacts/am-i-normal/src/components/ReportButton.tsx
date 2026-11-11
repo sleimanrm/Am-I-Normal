@@ -11,6 +11,7 @@ const REPORT_REASONS = [
   "Drug-related content",
   "Offensive content",
   "Spam",
+  "Clinical or Medical Content",
 ] as const;
 
 type ReportButtonProps = {

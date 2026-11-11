@@ -180,8 +180,36 @@ const PROFANITY = pattern(
   "asshole", "bastard",
 );
 
+/** Clinical self-assessment — targeting diagnostic terminology in a self-assessment context.
+ *  Matches question formats like "Do you have X?", "Do you experience Y?",
+ *  "Do you take Z?" where X, Y, Z are diagnostic terms.
+ *  Does NOT block ordinary conversational usage of the same words.
+ *  ⚠️ Heuristic: blocks when the diagnostic term is the primary focus of a self-assessment question,
+ *  not when it's a temporary feeling or general behavior described in context.
+ */
+const CLINICAL = pattern(
+  "do you have", "do you experience", "do you struggle with",
+  "do you think you have",
+  "symptoms of",
+  "medication for",
+  "therapy for",
+  "adhd", "add",
+  "ocd", "obsessive compulsive",
+  "depression", "depressive",
+  "anxiety", "anxious",
+  "ptsd", "post-traumatic",
+  "bipolar", "borderline",
+  "eating disorder", "ed",
+  "personality disorder",
+  "autism", "autistic",
+  "panic", "panic attack",
+  "symptom",
+  "medication", "meds", "prescription",
+  "therapy", "therapist", "counselling"
+);
+
 const CONTENT_RULES: RegExp[] = [
-  SEXUAL, DRUGS, SELF_HARM, VIOLENCE, HATE, HARASSMENT, CSAM, PROFANITY,
+  SEXUAL, DRUGS, SELF_HARM, VIOLENCE, HATE, HARASSMENT, CSAM, PROFANITY, CLINICAL,
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -238,6 +266,18 @@ export function validateHabit(text: string): ValidationResult {
       ok: false,
       error: "Too generic — make it specific. What exactly do you do, and how?",
     };
+  }
+
+  // Check for clinical self-assessment content
+  const plain = t.toLowerCase();
+  const norm = normalise(t);
+  for (const re of CONTENT_RULES) {
+    if (re.test(plain) || re.test(norm)) {
+      return {
+        ok: false,
+        error: "This habit asks about medical or psychiatric conditions. Please share an everyday behavior instead.",
+      };
+    }
   }
 
   return { ok: true };

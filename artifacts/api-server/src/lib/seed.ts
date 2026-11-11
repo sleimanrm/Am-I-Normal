@@ -8,7 +8,7 @@ const HABITS_SEED = [
   { question: "Do you replay embarrassing moments from years ago?", category: "Overthinking", meTooPctDefault: 68, traits: { Overthinker: 3, Sentimental: 2 } },
   { question: "Do you mentally argue with people who aren't there?", category: "Overthinking", meTooPctDefault: 61, traits: { Overthinker: 2, "Creative Thinker": 1 } },
   { question: "Do you plan what you'll say in a meeting but then forget it all?", category: "Overthinking", meTooPctDefault: 55, traits: { Overthinker: 2, "Pattern Seeker": 1 } },
-  { question: "Do you catastrophize small mistakes into career-ending disasters?", category: "Overthinking", meTooPctDefault: 47, traits: { Overthinker: 3 } },
+  { question: "Do you imagine your life is ruined because of a tiny typo?", category: "Overthinking", meTooPctDefault: 47, traits: { Overthinker: 3 } },
   { question: "Do you reread your own texts to see how they sound?", category: "Overthinking", meTooPctDefault: 74, traits: { Overthinker: 2, Observer: 1 } },
   { question: "Do you practice arguments before they happen and win every time?", category: "Overthinking", meTooPctDefault: 58, traits: { Overthinker: 2, "Creative Thinker": 2 } },
   { question: "Do you make songs for your pets?", category: "Pets", meTooPctDefault: 57, traits: { "Animal Lover": 3, "Creative Thinker": 2 } },
